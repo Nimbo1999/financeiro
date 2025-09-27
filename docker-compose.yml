@@ -1,0 +1,57 @@
+services:
+  user-postgres:
+    image: postgres:15
+    container_name: user_postgres_db
+    environment:
+      POSTGRES_USER: matheus
+      POSTGRES_PASSWORD: dev1234 # Using a fake password for development, but in production use a strong password!
+      POSTGRES_DB: financeiro_user
+    ports:
+      - "15432:5432"
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  authentication-postgres:
+    image: postgres:15
+    container_name: authentication_postgres_db
+    environment:
+      POSTGRES_USER: matheus
+      POSTGRES_PASSWORD: dev1234 # Using a fake password for development, but in production use a strong password!
+      POSTGRES_DB: financeiro_authentication
+    ports:
+      - "25432:5432"
+    volumes:
+      - authentication_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_ui
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin # Using a fake password for development, but in production use a strong password!
+    ports:
+      - "80:80"
+    depends_on:
+      - user-postgres
+      - authentication-postgres
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_server
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123 # Using a fake password for development, but in production use a strong password!
+    ports:
+      - "5672:5672" # AMQP port
+      - "15672:15672" # Management UI port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+volumes:
+  user_postgres_data:
+  authentication_postgres_data:
+  rabbitmq_data:

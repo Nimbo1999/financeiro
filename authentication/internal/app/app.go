@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/nimbo1999/financeiro/users/internal/handler"
-	"github.com/nimbo1999/financeiro/users/internal/repositories"
-	"github.com/nimbo1999/financeiro/users/internal/services"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/nimbo1999/financeiro/authentication/internal/handler"
 	"gorm.io/gorm"
 )
 
@@ -40,14 +39,14 @@ func (a *App) Run(port string) error {
 		port = "8080"
 	}
 
-	userRepository := repositories.NewUserRepository(a.db)
-	userService := services.NewUserService(userRepository)
-	userHandler := handler.NewUserHandler(userService)
+	healthHandler := handler.NewHealthHandler(a.db)
 
 	mux := chi.NewMux()
 	mux.Use(a.requestTrackingMiddleware)
+	mux.Use(middleware.GetHead)
 	mux.Use(cors)
-	mux.Route("/", userHandler.RegisterRoutes)
+	// mux.Route("/", func(r chi.Router) {})
+	mux.Get("/health", healthHandler.HealthRoute)
 
 	a.server = &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
