@@ -10,6 +10,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nimbo1999/financeiro/authentication/internal/handler"
+	"github.com/nimbo1999/financeiro/authentication/internal/repository"
+	"github.com/nimbo1999/financeiro/authentication/internal/services"
 	"gorm.io/gorm"
 )
 
@@ -39,14 +41,22 @@ func (a *App) Run(port string) error {
 		port = "8080"
 	}
 
+	authCodeRepository := repository.NewPostgresAuthCodeRepository(a.db)
+	jwtService := services.NewJWTService(nil)
+
+	authCodeService := services.NewAuthService(authCodeRepository, jwtService, nil)
 	healthHandler := handler.NewHealthHandler(a.db)
+	authHandler := handler.NewAuthHandler(authCodeService)
 
 	mux := chi.NewMux()
+	// Global middleware
 	mux.Use(a.requestTrackingMiddleware)
 	mux.Use(middleware.GetHead)
-	mux.Use(cors)
-	// mux.Route("/", func(r chi.Router) {})
-	mux.Get("/health", healthHandler.HealthRoute)
+	mux.Use(handler.CorsMiddleware())
+	mux.Use(handler.RecoveryMiddleware)
+	mux.Use(handler.LoggingMiddleware)
+	mux.Use(handler.SecurityHeadersMiddleware)
+	handler.RegisterRoutes(mux, healthHandler, authHandler)
 
 	a.server = &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
