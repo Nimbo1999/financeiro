@@ -1,9 +1,11 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type AuthCode struct {
-	ID        string     `json:"id"`
+	ID        string     `json:"id" gorm:"primaryKey"`
 	UserID    string     `json:"user_id"`
 	Code      string     `json:"code"`
 	ExpiresAt time.Time  `json:"expires_at"`
