@@ -5,3 +5,6 @@ plans/
 
 # Ignore coverage files
 */coverage.*
+
+# Ignore PEM files
+**/*.pem

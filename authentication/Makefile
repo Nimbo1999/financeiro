@@ -4,7 +4,7 @@ DB_PORT=25432
 PORT=8082
 POSTGRES_CONNECTION_STRING=matheus:dev1234@localhost:$(DB_PORT)/$(DB_NAME)
 
-PHONY: migrate-up run build unit-test
+PHONY: migrate-up run build unit-test g-cert-files
 
 migrate-up:
 	migrate -source file://migrations -database pgx://$(POSTGRES_CONNECTION_STRING) up
@@ -25,3 +25,7 @@ unit-test:
 	go tool cover -func=coverage.out
 	go tool cover -html=coverage.out -o coverage.html
 	go tool cover -func=coverage.out | grep total | awk '{print "Total Coverage: " $$3}'
+
+# Generate JWT RSA256 cert files
+g-cert-files:
+	go run cmd/generate_certificates/main.go
