@@ -1,2 +1,7 @@
 plans/
+
+# Ignore GO binary files.
 */app-server
+
+# Ignore coverage files
+*/coverage.*

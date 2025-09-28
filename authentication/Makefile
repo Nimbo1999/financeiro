@@ -4,7 +4,7 @@ DB_PORT=25432
 PORT=8082
 POSTGRES_CONNECTION_STRING=matheus:dev1234@localhost:$(DB_PORT)/$(DB_NAME)
 
-PHONY: migrate-up run build
+PHONY: migrate-up run build unit-test
 
 migrate-up:
 	migrate -source file://migrations -database pgx://$(POSTGRES_CONNECTION_STRING) up
@@ -19,3 +19,9 @@ build:
 	POSTGRES_CONNECTION_STRING=postgres://$(POSTGRES_CONNECTION_STRING) \
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go build -o $(BINARY_FILE_NAME) cmd/server/main.go
+
+unit-test:
+	go test -v -cover ./... -coverprofile=coverage.out
+	go tool cover -func=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
+	go tool cover -func=coverage.out | grep total | awk '{print "Total Coverage: " $$3}'
