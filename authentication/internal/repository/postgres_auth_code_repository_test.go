@@ -48,7 +48,6 @@ func TestPostgresAuthCodeRepositoryTestSuite(t *testing.T) {
 // Create method tests
 func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_Success() {
 	authCode := &models.AuthCode{
-		ID:        "test-id",
 		UserID:    "user-123",
 		Code:      "123456",
 		ExpiresAt: time.Now().Add(5 * time.Minute),
@@ -57,7 +56,7 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_Success() {
 
 	suite.mock.ExpectBegin()
 	suite.mock.ExpectExec(`INSERT INTO "auth_codes"`).
-		WithArgs(authCode.ID, authCode.UserID, authCode.Code, authCode.ExpiresAt, sqlmock.AnyArg(), authCode.CreatedAt).
+		WithArgs(authCode.UserID, authCode.Code, authCode.ExpiresAt, sqlmock.AnyArg(), authCode.CreatedAt).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	suite.mock.ExpectCommit()
 
@@ -75,7 +74,6 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_NilAuthCode() {
 
 func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_DatabaseError() {
 	authCode := &models.AuthCode{
-		ID:        "test-id",
 		UserID:    "user-123",
 		Code:      "123456",
 		ExpiresAt: time.Now().Add(5 * time.Minute),
@@ -84,7 +82,7 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_DatabaseError() {
 
 	suite.mock.ExpectBegin()
 	suite.mock.ExpectExec(`INSERT INTO "auth_codes"`).
-		WithArgs(authCode.ID, authCode.UserID, authCode.Code, authCode.ExpiresAt, sqlmock.AnyArg(), authCode.CreatedAt).
+		WithArgs(authCode.UserID, authCode.Code, authCode.ExpiresAt, sqlmock.AnyArg(), authCode.CreatedAt).
 		WillReturnError(errors.New("database connection failed"))
 	suite.mock.ExpectRollback()
 
@@ -249,7 +247,6 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_TableDriven() {
 		{
 			name: "Valid AuthCode",
 			authCode: &models.AuthCode{
-				ID:        "valid-id",
 				UserID:    "user-123",
 				Code:      "123456",
 				ExpiresAt: time.Now().Add(5 * time.Minute),
@@ -258,7 +255,7 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_TableDriven() {
 			setupMock: func() {
 				suite.mock.ExpectBegin()
 				suite.mock.ExpectExec(`INSERT INTO "auth_codes"`).
-					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(),
 						sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				suite.mock.ExpectCommit()
@@ -275,7 +272,6 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_TableDriven() {
 		{
 			name: "Database Error",
 			authCode: &models.AuthCode{
-				ID:        "error-id",
 				UserID:    "user-123",
 				Code:      "123456",
 				ExpiresAt: time.Now().Add(5 * time.Minute),
@@ -284,7 +280,7 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_TableDriven() {
 			setupMock: func() {
 				suite.mock.ExpectBegin()
 				suite.mock.ExpectExec(`INSERT INTO "auth_codes"`).
-					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(),
 						sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnError(errors.New("constraint violation"))
 				suite.mock.ExpectRollback()
@@ -352,7 +348,6 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestContextCancellation() {
 	cancel() // Cancel immediately
 
 	authCode := &models.AuthCode{
-		ID:        "test-id",
 		UserID:    "user-123",
 		Code:      "123456",
 		ExpiresAt: time.Now().Add(5 * time.Minute),

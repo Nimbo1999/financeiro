@@ -31,7 +31,9 @@ func (r *PostgresAuthCodeRepository) Create(ctx context.Context, authCode *model
 	if authCode == nil {
 		return errors.New("auth code cannot be nil")
 	}
-	return r.db.WithContext(ctx).Create(authCode).Error
+	return r.db.WithContext(ctx).
+		Omit("ID").
+		Create(authCode).Error
 }
 
 /*
