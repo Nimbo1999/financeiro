@@ -3,13 +3,15 @@ package config
 import "os"
 
 type Config struct {
-	Port                     string
+	HttpPort                 string
+	GrpcPort                 string
 	PostgresConnectionString string
 }
 
 func LoadConfigFromEnvironment() *Config {
 	return &Config{
-		Port:                     os.Getenv("PORT"),
+		HttpPort:                 os.Getenv("HTTP_PORT"),
+		GrpcPort:                 os.Getenv("GRPC_PORT"),
 		PostgresConnectionString: os.Getenv("POSTGRES_CONNECTION_STRING"),
 	}
 }

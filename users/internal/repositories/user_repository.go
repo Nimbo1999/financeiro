@@ -23,6 +23,7 @@ type PaginatedResult struct {
 type UserRepository interface {
 	Create(user *models.User) error
 	FindByID(id string) (*models.User, error)
+	FindByEmail(email string) (*models.User, error)
 	Update(user *models.User) error
 	Delete(id string) error
 	List(params *PaginationParams) (*PaginatedResult, error)
@@ -46,6 +47,14 @@ func (r *userRepository) FindByID(id string) (*models.User, error) {
 	var user models.User
 	err := r.db.Where("id = ?", id).First(&user).Error
 	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) FindByEmail(email string) (*models.User, error) {
+	var user models.User
+	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

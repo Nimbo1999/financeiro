@@ -1,21 +1,27 @@
 BINARY_FILE_NAME=app-server
-PORT=8081
 DB_NAME=financeiro_user
+HTTP_PORT=8081
+GRPC_PORT=9091
 DB_PORT=15432
 POSTGRES_CONNECTION_STRING=matheus:dev1234@localhost:$(DB_PORT)/$(DB_NAME)
 
-PHONY: migrate-up run build
+PHONY: migrate-up run build generate-proto
 
 migrate-up:
 	migrate -source file://migrations -database pgx://$(POSTGRES_CONNECTION_STRING) up
 
 run:
-	PORT=$(PORT) \
+	HTTP_PORT=$(HTTP_PORT) \
+	GRPC_PORT=$(GRPC_PORT) \
 	POSTGRES_CONNECTION_STRING=postgres://$(POSTGRES_CONNECTION_STRING) \
 	go run cmd/container/main.go
 
 build:
-	PORT=$(PORT) \
+	HTTP_PORT=$(HTTP_PORT) \
+	GRPC_PORT=$(GRPC_PORT) \
 	POSTGRES_CONNECTION_STRING=postgres://$(POSTGRES_CONNECTION_STRING) \
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go build -o $(BINARY_FILE_NAME) cmd/container/main.go
+
+generate-proto:
+	./scripts/generate_proto.sh

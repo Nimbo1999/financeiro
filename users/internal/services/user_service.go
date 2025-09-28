@@ -31,6 +31,7 @@ type UpdateUserRequest struct {
 type UserService interface {
 	CreateUser(req *CreateUserRequest) (*models.User, error)
 	GetUserByID(id string) (*models.User, error)
+	GetUserByEmail(email string) (*models.User, error)
 	UpdateUser(req *UpdateUserRequest) (*models.User, error)
 	ListUsers(params *repositories.PaginationParams) (*repositories.PaginatedResult, error)
 	DeleteUser(id string) error
@@ -83,6 +84,19 @@ func (s *userService) GetUserByID(id string) (*models.User, error) {
 	}
 
 	user, err := s.userRepo.FindByID(id)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+
+	return user, nil
+}
+
+func (s *userService) GetUserByEmail(email string) (*models.User, error) {
+	if email == "" {
+		return nil, ErrInvalidUserData
+	}
+
+	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		return nil, ErrUserNotFound
 	}

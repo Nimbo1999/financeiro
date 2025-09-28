@@ -11,13 +11,15 @@ import (
 	"github.com/nimbo1999/financeiro/users/internal/handler"
 	"github.com/nimbo1999/financeiro/users/internal/repositories"
 	"github.com/nimbo1999/financeiro/users/internal/services"
+	"google.golang.org/grpc"
 	"gorm.io/gorm"
 )
 
 type App struct {
-	db     *gorm.DB
-	server *http.Server
-	wg     *sync.WaitGroup
+	db         *gorm.DB
+	httpServer *http.Server
+	grpcServer *grpc.Server
+	wg         *sync.WaitGroup
 }
 
 func New(db *gorm.DB) *App {
@@ -35,7 +37,7 @@ func (a *App) requestTrackingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (a *App) Run(port string) error {
+func (a *App) RunHTTP(port string) error {
 	if port == "" {
 		port = "8080"
 	}
@@ -49,24 +51,24 @@ func (a *App) Run(port string) error {
 	mux.Use(cors)
 	mux.Route("/", userHandler.RegisterRoutes)
 
-	a.server = &http.Server{
+	a.httpServer = &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: mux,
 	}
 
-	fmt.Println("Starting server on port:", port)
-	return a.server.ListenAndServe()
+	fmt.Println("Starting HTTP server on port:", port)
+	return a.httpServer.ListenAndServe()
 }
 
-func (a *App) Shutdown(ctx context.Context) error {
-	fmt.Println("Shutting down server gracefully...")
+func (a *App) ShutdownHTTP(ctx context.Context) error {
+	fmt.Println("Shutting down HTTP server gracefully...")
 
 	shutdownCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	if a.server != nil {
-		if err := a.server.Shutdown(shutdownCtx); err != nil {
-			return fmt.Errorf("server shutdown error: %w", err)
+	if a.httpServer != nil {
+		if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("HTTP server shutdown error: %w", err)
 		}
 	}
 
@@ -78,21 +80,11 @@ func (a *App) Shutdown(ctx context.Context) error {
 
 	select {
 	case <-done:
-		fmt.Println("All requests completed")
+		fmt.Println("All HTTP requests completed")
 	case <-shutdownCtx.Done():
-		fmt.Println("Shutdown timeout reached, forcing exit")
+		fmt.Println("HTTP shutdown timeout reached, forcing exit")
 	}
 
-	if a.db != nil {
-		sqlDB, err := a.db.DB()
-		if err == nil {
-			if err := sqlDB.Close(); err != nil {
-				return fmt.Errorf("database close error: %w", err)
-			}
-		}
-		fmt.Println("Database connections closed")
-	}
-
-	fmt.Println("Server shutdown complete")
+	fmt.Println("HTTP server shutdown complete")
 	return nil
 }

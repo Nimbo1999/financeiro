@@ -11,7 +11,7 @@ import (
 	"github.com/nimbo1999/financeiro/users/internal/services"
 )
 
-type Handler interface {
+type HTTPHandler interface {
 	RegisterRoutes(router chi.Router)
 }
 

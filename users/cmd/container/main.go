@@ -27,10 +27,17 @@ func main() {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
-	serverErrors := make(chan error, 1)
-	go func() {
-		serverErrors <- app.Run(config.Port)
-	}()
+	serverErrors := make(chan error, 2)
+
+	// Start HTTP server
+	go func(port string) {
+		serverErrors <- app.RunHTTP(port)
+	}(config.HttpPort)
+
+	// Start gRPC server
+	go func(port string) {
+		serverErrors <- app.RunGRPC(port)
+	}(config.GrpcPort)
 
 	select {
 	case err := <-serverErrors:

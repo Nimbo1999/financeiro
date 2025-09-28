@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package users.v1;
+
+option go_package = "github.com/nimbo1999/financeiro/users/pkg/grpc/users/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// UserService provides gRPC methods for user operations
+service UserService {
+  // GetUserByEmail retrieves a user by email address
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+
+  // GetUserById retrieves a user by their unique identifier
+  rpc GetUserById(GetUserByIdRequest) returns (GetUserByIdResponse);
+
+  // HealthCheck returns the health status of the service
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// User represents a user entity matching the internal model
+message User {
+  string id = 1;
+  string email = 2;
+  string full_name = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+// GetUserByEmail request and response
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+message GetUserByEmailResponse {
+  User user = 1;
+  bool found = 2;
+}
+
+// GetUserById request and response
+message GetUserByIdRequest {
+  string id = 1;
+}
+
+message GetUserByIdResponse {
+  User user = 1;
+  bool found = 2;
+}
+
+// Health check messages
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  enum Status {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+  Status status = 1;
+  string message = 2;
+}
