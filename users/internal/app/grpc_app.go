@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/nimbo1999/financeiro/users/internal/grpc/interceptors"
 	"github.com/nimbo1999/financeiro/users/internal/handler"
 	"github.com/nimbo1999/financeiro/users/internal/repositories"
 	"github.com/nimbo1999/financeiro/users/internal/services"
@@ -24,10 +25,14 @@ func (a *App) RunGRPC(port string) error {
 		return fmt.Errorf("failed to listen on port %s: %w", port, err)
 	}
 
-	// Create gRPC server with options
+	// Create gRPC server with options and interceptors
 	a.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(4*1024*1024), // 4MB
 		grpc.MaxSendMsgSize(4*1024*1024), // 4MB
+		grpc.ChainUnaryInterceptor(
+			interceptors.RecoveryUnaryInterceptor(),
+			interceptors.LoggingUnaryInterceptor(),
+		),
 	)
 
 	// Create service dependencies
