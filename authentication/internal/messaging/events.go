@@ -35,7 +35,6 @@ type AuthCodeRequestedData struct {
 	AuthCode  string    `json:"auth_code"`
 	CodeID    string    `json:"code_id"`
 	ExpiresAt time.Time `json:"expires_at"`
-	RequestIP string    `json:"request_ip,omitempty"`
 }
 
 // AuthCodeVerifiedEvent is published when an authentication code is successfully verified
@@ -72,12 +71,11 @@ type AuthCodeFailedEvent struct {
 }
 
 type AuthCodeFailedData struct {
-	UserEmail   string    `json:"user_email"`
-	CodeID      string    `json:"code_id,omitempty"`
-	FailedAt    time.Time `json:"failed_at"`
-	Reason      string    `json:"reason"`
-	AttemptIP   string    `json:"attempt_ip,omitempty"`
-	AttemptsCount int     `json:"attempts_count,omitempty"`
+	UserEmail     string    `json:"user_email"`
+	CodeID        string    `json:"code_id,omitempty"`
+	FailedAt      time.Time `json:"failed_at"`
+	Reason        string    `json:"reason"`
+	AttemptsCount int       `json:"attempts_count,omitempty"`
 }
 
 // Event interface for all authentication events
@@ -90,7 +88,7 @@ type Event interface {
 }
 
 // NewAuthCodeRequestedEvent creates a new auth code requested event
-func NewAuthCodeRequestedEvent(userEmail, authCode, codeID string, expiresAt time.Time, requestIP string) *AuthCodeRequestedEvent {
+func NewAuthCodeRequestedEvent(userEmail, authCode, codeID string, expiresAt time.Time) *AuthCodeRequestedEvent {
 	return &AuthCodeRequestedEvent{
 		BaseEvent: BaseEvent{
 			ID:        generateEventID(),
@@ -104,7 +102,6 @@ func NewAuthCodeRequestedEvent(userEmail, authCode, codeID string, expiresAt tim
 			AuthCode:  authCode,
 			CodeID:    codeID,
 			ExpiresAt: expiresAt,
-			RequestIP: requestIP,
 		},
 	}
 }
@@ -149,7 +146,7 @@ func NewAuthCodeExpiredEvent(userEmail, codeID string) *AuthCodeExpiredEvent {
 }
 
 // NewAuthCodeFailedEvent creates a new auth code failed event
-func NewAuthCodeFailedEvent(userEmail, codeID, reason, attemptIP string, attemptsCount int) *AuthCodeFailedEvent {
+func NewAuthCodeFailedEvent(userEmail, codeID, reason string, attemptsCount int) *AuthCodeFailedEvent {
 	return &AuthCodeFailedEvent{
 		BaseEvent: BaseEvent{
 			ID:        generateEventID(),
@@ -163,7 +160,6 @@ func NewAuthCodeFailedEvent(userEmail, codeID, reason, attemptIP string, attempt
 			CodeID:        codeID,
 			FailedAt:      time.Now().UTC(),
 			Reason:        reason,
-			AttemptIP:     attemptIP,
 			AttemptsCount: attemptsCount,
 		},
 	}

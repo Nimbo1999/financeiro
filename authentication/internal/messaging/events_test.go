@@ -22,9 +22,8 @@ func (suite *EventsTestSuite) TestNewAuthCodeRequestedEvent() {
 	authCode := "123456"
 	codeID := "code-123"
 	expiresAt := time.Now().Add(5 * time.Minute)
-	requestIP := "192.168.1.1"
 
-	event := NewAuthCodeRequestedEvent(userEmail, authCode, codeID, expiresAt, requestIP)
+	event := NewAuthCodeRequestedEvent(userEmail, authCode, codeID, expiresAt)
 
 	assert.NotNil(suite.T(), event)
 	assert.Equal(suite.T(), EventTypeAuthCodeRequested, event.Type)
@@ -37,7 +36,6 @@ func (suite *EventsTestSuite) TestNewAuthCodeRequestedEvent() {
 	assert.Equal(suite.T(), authCode, event.Data.AuthCode)
 	assert.Equal(suite.T(), codeID, event.Data.CodeID)
 	assert.Equal(suite.T(), expiresAt, event.Data.ExpiresAt)
-	assert.Equal(suite.T(), requestIP, event.Data.RequestIP)
 }
 
 func (suite *EventsTestSuite) TestNewAuthCodeVerifiedEvent() {
@@ -79,23 +77,21 @@ func (suite *EventsTestSuite) TestNewAuthCodeFailedEvent() {
 	userEmail := "test@example.com"
 	codeID := "code-123"
 	reason := "invalid_code"
-	attemptIP := "192.168.1.1"
 	attemptsCount := 3
 
-	event := NewAuthCodeFailedEvent(userEmail, codeID, reason, attemptIP, attemptsCount)
+	event := NewAuthCodeFailedEvent(userEmail, codeID, reason, attemptsCount)
 
 	assert.NotNil(suite.T(), event)
 	assert.Equal(suite.T(), EventTypeAuthCodeFailed, event.Type)
 	assert.Equal(suite.T(), userEmail, event.Data.UserEmail)
 	assert.Equal(suite.T(), codeID, event.Data.CodeID)
 	assert.Equal(suite.T(), reason, event.Data.Reason)
-	assert.Equal(suite.T(), attemptIP, event.Data.AttemptIP)
 	assert.Equal(suite.T(), attemptsCount, event.Data.AttemptsCount)
 	assert.WithinDuration(suite.T(), time.Now(), event.Data.FailedAt, time.Second)
 }
 
 func (suite *EventsTestSuite) TestAuthCodeRequestedEvent_EventInterface() {
-	event := NewAuthCodeRequestedEvent("test@example.com", "123456", "code-123", time.Now(), "192.168.1.1")
+	event := NewAuthCodeRequestedEvent("test@example.com", "123456", "code-123", time.Now())
 
 	assert.Equal(suite.T(), EventTypeAuthCodeRequested, event.GetType())
 	assert.NotEmpty(suite.T(), event.GetID())
@@ -139,7 +135,7 @@ func (suite *EventsTestSuite) TestAuthCodeExpiredEvent_EventInterface() {
 }
 
 func (suite *EventsTestSuite) TestAuthCodeFailedEvent_EventInterface() {
-	event := NewAuthCodeFailedEvent("test@example.com", "code-123", "invalid_code", "192.168.1.1", 3)
+	event := NewAuthCodeFailedEvent("test@example.com", "code-123", "invalid_code", 3)
 
 	assert.Equal(suite.T(), EventTypeAuthCodeFailed, event.GetType())
 	assert.Equal(suite.T(), string(EventTypeAuthCodeFailed), event.GetRoutingKey())
@@ -187,7 +183,7 @@ func TestEventSerialization(t *testing.T) {
 	}{
 		{
 			"AuthCodeRequestedEvent",
-			NewAuthCodeRequestedEvent("test@example.com", "123456", "code-123", time.Now(), "192.168.1.1"),
+			NewAuthCodeRequestedEvent("test@example.com", "123456", "code-123", time.Now()),
 		},
 		{
 			"AuthCodeVerifiedEvent",
@@ -199,7 +195,7 @@ func TestEventSerialization(t *testing.T) {
 		},
 		{
 			"AuthCodeFailedEvent",
-			NewAuthCodeFailedEvent("test@example.com", "code-123", "invalid_code", "192.168.1.1", 3),
+			NewAuthCodeFailedEvent("test@example.com", "code-123", "invalid_code", 3),
 		},
 	}
 

@@ -3,13 +3,17 @@ package config
 import "os"
 
 type Config struct {
-	Port                     string
+	HTTPPort                 string
 	PostgresConnectionString string
+	UserGRPCAddress          string
+	RabbitMQURL              string
 }
 
 func LoadConfigFromEnvironment() *Config {
 	return &Config{
-		Port:                     os.Getenv("PORT"),
+		HTTPPort:                 os.Getenv("HTTP_PORT"),
 		PostgresConnectionString: os.Getenv("POSTGRES_CONNECTION_STRING"),
+		UserGRPCAddress:          os.Getenv("USER_GRPC_ADDRESS"),
+		RabbitMQURL:              os.Getenv("RABBITMQ_URL"),
 	}
 }

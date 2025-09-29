@@ -5,23 +5,29 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
+	"net"
 	"strings"
 	"time"
 
+	"github.com/nimbo1999/financeiro/authentication/internal/clients"
+	"github.com/nimbo1999/financeiro/authentication/internal/messaging"
 	"github.com/nimbo1999/financeiro/authentication/internal/models"
 	"github.com/nimbo1999/financeiro/authentication/internal/repository"
 	"github.com/nimbo1999/financeiro/authentication/internal/utils"
 )
 
 var (
-	ErrEmailInvalid         = errors.New("email is invalid")
-	ErrCodeExpired          = errors.New("auth code has expired")
-	ErrCodeAlreadyUsed      = errors.New("auth code has already been used")
-	ErrRateLimitExceeded    = errors.New("rate limit exceeded")
-	ErrCodeGenerationFailed = errors.New("failed to generate auth code")
-	ErrUserNotFound         = errors.New("user not found")
-	ErrInvalidAuthCode      = errors.New("invalid auth code")
+	ErrEmailInvalid           = errors.New("email is invalid")
+	ErrCodeExpired            = errors.New("auth code has expired")
+	ErrCodeAlreadyUsed        = errors.New("auth code has already been used")
+	ErrRateLimitExceeded      = errors.New("rate limit exceeded")
+	ErrCodeGenerationFailed   = errors.New("failed to generate auth code")
+	ErrUserNotFound           = errors.New("user not found")
+	ErrInvalidAuthCode        = errors.New("invalid auth code")
+	ErrUserServiceUnavailable = errors.New("user service is temporarily unavailable")
+	ErrMessagingServiceFailed = errors.New("messaging service failed")
 )
 
 type AuthService interface {
@@ -62,9 +68,11 @@ type AuthConfig struct {
 }
 
 type authService struct {
-	authRepo   repository.AuthCodeRepository
-	jwtService JWTService
-	config     *AuthConfig
+	authRepo          repository.AuthCodeRepository
+	jwtService        JWTService
+	config            *AuthConfig
+	userServiceClient clients.UserServiceClient // For user validation
+	publisher         messaging.Publisher       // For event publishing
 	/* @todo: refactor the rateLimiter to store the information in redis */
 	rateLimiter map[string]*rateLimitEntry // Simple in-memory rate limiter
 }
@@ -74,7 +82,7 @@ type rateLimitEntry struct {
 	resetTime time.Time
 }
 
-func NewAuthService(authRepo repository.AuthCodeRepository, jwtService JWTService, config *AuthConfig) AuthService {
+func NewAuthService(authRepo repository.AuthCodeRepository, jwtService JWTService, userServiceClient clients.UserServiceClient, publisher messaging.Publisher, config *AuthConfig) AuthService {
 	if config == nil {
 		config = &AuthConfig{}
 	}
@@ -100,10 +108,12 @@ func NewAuthService(authRepo repository.AuthCodeRepository, jwtService JWTServic
 	}
 
 	return &authService{
-		authRepo:    authRepo,
-		jwtService:  jwtService,
-		config:      config,
-		rateLimiter: make(map[string]*rateLimitEntry),
+		authRepo:          authRepo,
+		jwtService:        jwtService,
+		config:            config,
+		userServiceClient: userServiceClient,
+		publisher:         publisher,
+		rateLimiter:       make(map[string]*rateLimitEntry),
 	}
 }
 
@@ -120,8 +130,27 @@ func (s *authService) RequestAuthCode(ctx context.Context, email string) (*AuthC
 		return nil, ErrEmailInvalid
 	}
 
+	// Validate user exists via gRPC
+	userCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	user, found, err := s.userServiceClient.GetUserByEmail(userCtx, email)
+	if err != nil {
+		// Handle gRPC errors gracefully - don't fail the entire flow for retryable errors
+		if s.isRetryableError(err) {
+			return nil, ErrUserServiceUnavailable
+		}
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+
+	if !found || user == nil {
+		return nil, ErrUserNotFound
+	}
+
 	// Check rate limiting for email
 	if err := s.checkRateLimit(email); err != nil {
+		// Publish failed event for rate limiting
+		go s.publishAuthCodeFailedEvent(context.Background(), email, "", "rate_limit_exceeded", 0)
 		return nil, err
 	}
 
@@ -133,9 +162,8 @@ func (s *authService) RequestAuthCode(ctx context.Context, email string) (*AuthC
 
 	now := time.Now()
 
-	// Create auth code record
 	authCode := &models.AuthCode{
-		UserID:    email, // Using email as user ID for now
+		UserID:    user.Id,
 		Code:      code,
 		ExpiresAt: now.Add(s.config.CodeExpiryDuration),
 		CreatedAt: now,
@@ -146,8 +174,13 @@ func (s *authService) RequestAuthCode(ctx context.Context, email string) (*AuthC
 		return nil, fmt.Errorf("failed to store auth code: %w", err)
 	}
 
+	log.Printf("Generated auth code %s for user %s (email: %s)", code, user.Id, email)
+
 	// Update rate limiter
 	s.updateRateLimit(email)
+
+	// Publish auth code requested event
+	go s.publishAuthCodeRequestedEvent(context.Background(), email, code, authCode.ID, authCode.ExpiresAt)
 
 	return &AuthCodeResult{
 		CodeID:    authCode.ID,
@@ -169,10 +202,23 @@ func (s *authService) VerifyAuthCode(ctx context.Context, email, code string) (*
 		return nil, ErrEmailInvalid
 	}
 
-	// @todo: retrieve the user from user service by email to use the user ID instead of the email. For now, we will keep using the email as user ID.
+	// Get user information from user service
+	userCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-	// Find the most recent auth code for this email
-	authCode, err := s.authRepo.FindByUserID(ctx, email)
+	user, found, err := s.userServiceClient.GetUserByEmail(userCtx, email)
+	if err != nil && s.isRetryableError(err) {
+		go s.publishAuthCodeFailedEvent(context.Background(), email, "", "user_service_unavailable", 0)
+		return nil, ErrUserServiceUnavailable
+	}
+
+	if !found && user == nil {
+		// User not found - cannot verify code
+		go s.publishAuthCodeFailedEvent(context.Background(), email, "", "user_not_found", 0)
+		return nil, ErrUserNotFound
+	}
+
+	authCode, err := s.authRepo.FindByUserID(ctx, user.Id)
 	if err != nil {
 		if errors.Is(err, repository.ErrAuthCodeNotFound) {
 			return nil, ErrInvalidAuthCode
@@ -200,18 +246,21 @@ func (s *authService) VerifyAuthCode(ctx context.Context, email, code string) (*
 		return nil, fmt.Errorf("failed to mark code as used: %w", err)
 	}
 
-	// @todo: again, for now, we are using email as user ID. In the future, integrate with user service to get actual user ID and check the user status before anything.
 	// Generate JWT tokens
-	tokenPair, err := s.jwtService.GenerateTokenPair(ctx, email, email)
+	tokenPair, err := s.jwtService.GenerateTokenPair(ctx, user.Id, email)
 	if err != nil {
+		go s.publishAuthCodeFailedEvent(context.Background(), email, authCode.ID, "token_generation_failed", 0)
 		return nil, fmt.Errorf("failed to generate tokens: %w", err)
 	}
 
+	// Publish successful verification event
+	go s.publishAuthCodeVerifiedEvent(context.Background(), email, user.Id, authCode.ID, false)
+
 	return &AuthResult{
-		UserID:          email,
+		UserID:          user.Id,
 		Email:           email,
 		TokenPair:       tokenPair,
-		IsNewUser:       false, // @todo: For now, treat all as existing users
+		IsNewUser:       false,
 		AuthenticatedAt: time.Now(),
 	}, nil
 }
@@ -294,4 +343,72 @@ func (s *authService) updateRateLimit(email string) {
 		// Increment existing entry
 		entry.count++
 	}
+}
+
+// Helper methods for event publishing
+func (s *authService) publishAuthCodeRequestedEvent(ctx context.Context, email, code, codeID string, expiresAt time.Time) {
+	event := messaging.NewAuthCodeRequestedEvent(email, code, codeID, expiresAt)
+
+	pubCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	if err := s.publisher.PublishEvent(pubCtx, event); err != nil {
+		// Log error but don't fail the main flow
+		fmt.Printf("Failed to publish auth code requested event: %v\n", err)
+	}
+}
+
+func (s *authService) publishAuthCodeVerifiedEvent(ctx context.Context, email, userID, codeID string, isNewUser bool) {
+	event := messaging.NewAuthCodeVerifiedEvent(email, userID, codeID, isNewUser)
+
+	pubCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	if err := s.publisher.PublishEvent(pubCtx, event); err != nil {
+		fmt.Printf("Failed to publish auth code verified event: %v\n", err)
+	}
+}
+
+func (s *authService) publishAuthCodeFailedEvent(ctx context.Context, email, codeID, reason string, attempts int) {
+	event := messaging.NewAuthCodeFailedEvent(email, codeID, reason, attempts)
+
+	pubCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	if err := s.publisher.PublishEvent(pubCtx, event); err != nil {
+		fmt.Printf("Failed to publish auth code failed event: %v\n", err)
+	}
+}
+
+// isRetryableError checks if a gRPC error is retryable
+func (s *authService) isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errStr := err.Error()
+
+	// Network-related errors that are retryable
+	retryableErrors := []string{
+		"connection refused",
+		"timeout",
+		"deadline exceeded",
+		"unavailable",
+		"circuit breaker",
+		"connection reset",
+		"no route to host",
+	}
+
+	for _, retryableErr := range retryableErrors {
+		if strings.Contains(strings.ToLower(errStr), retryableErr) {
+			return true
+		}
+	}
+
+	// Check for net.Error interface (timeout, temporary)
+	if netErr, ok := err.(net.Error); ok {
+		return netErr.Timeout() || netErr.Temporary()
+	}
+
+	return false
 }

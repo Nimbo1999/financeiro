@@ -5,16 +5,20 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/nimbo1999/financeiro/authentication/internal/messaging"
 	"github.com/nimbo1999/financeiro/authentication/internal/models"
 	"github.com/nimbo1999/financeiro/authentication/internal/repository"
 	"github.com/nimbo1999/financeiro/authentication/internal/utils"
+	userv1 "github.com/nimbo1999/financeiro/users/pkg/grpc/users/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Mock implementations
@@ -89,18 +93,76 @@ func (m *MockJWTService) GetPublicKey() *rsa.PublicKey {
 	return args.Get(0).(*rsa.PublicKey)
 }
 
+type MockUserServiceClient struct {
+	mock.Mock
+}
+
+func (m *MockUserServiceClient) GetUserByEmail(ctx context.Context, email string) (*userv1.User, bool, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, args.Bool(1), args.Error(2)
+	}
+	return args.Get(0).(*userv1.User), args.Bool(1), args.Error(2)
+}
+
+func (m *MockUserServiceClient) GetUserById(ctx context.Context, id string) (*userv1.User, bool, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Bool(1), args.Error(2)
+	}
+	return args.Get(0).(*userv1.User), args.Bool(1), args.Error(2)
+}
+
+func (m *MockUserServiceClient) HealthCheck(ctx context.Context) (userv1.HealthCheckResponse_Status, string, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(userv1.HealthCheckResponse_Status), args.String(1), args.Error(2)
+}
+
+func (m *MockUserServiceClient) Close() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+type MockPublisher struct {
+	mock.Mock
+}
+
+func (m *MockPublisher) PublishEvent(ctx context.Context, event messaging.Event) error {
+	args := m.Called(ctx, event)
+	return args.Error(0)
+}
+
+func (m *MockPublisher) PublishWithRetry(ctx context.Context, event messaging.Event, maxRetries int) error {
+	args := m.Called(ctx, event, maxRetries)
+	return args.Error(0)
+}
+
+func (m *MockPublisher) Close() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockPublisher) IsHealthy() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
 // Test Suite
 type AuthServiceTestSuite struct {
 	suite.Suite
-	authService AuthService
-	mockRepo    *MockAuthCodeRepository
-	mockJWT     *MockJWTService
-	config      *AuthConfig
+	authService    AuthService
+	mockRepo       *MockAuthCodeRepository
+	mockJWT        *MockJWTService
+	mockUserClient *MockUserServiceClient
+	mockPublisher  *MockPublisher
+	config         *AuthConfig
 }
 
 func (suite *AuthServiceTestSuite) SetupTest() {
 	suite.mockRepo = new(MockAuthCodeRepository)
 	suite.mockJWT = new(MockJWTService)
+	suite.mockUserClient = new(MockUserServiceClient)
+	suite.mockPublisher = new(MockPublisher)
 	suite.config = &AuthConfig{
 		CodeLength:         6,
 		CodeExpiryDuration: 5 * time.Minute,
@@ -109,12 +171,14 @@ func (suite *AuthServiceTestSuite) SetupTest() {
 		MaxRequestsPerIP:   5,
 		CleanupInterval:    1 * time.Hour,
 	}
-	suite.authService = NewAuthService(suite.mockRepo, suite.mockJWT, suite.config)
+	suite.authService = NewAuthService(suite.mockRepo, suite.mockJWT, suite.mockUserClient, suite.mockPublisher, suite.config)
 }
 
 func (suite *AuthServiceTestSuite) TearDownTest() {
 	suite.mockRepo.AssertExpectations(suite.T())
 	suite.mockJWT.AssertExpectations(suite.T())
+	suite.mockUserClient.AssertExpectations(suite.T())
+	// Skip publisher assertions since events are published asynchronously
 }
 
 func TestAuthServiceTestSuite(t *testing.T) {
@@ -124,14 +188,23 @@ func TestAuthServiceTestSuite(t *testing.T) {
 // RequestAuthCode tests
 func (suite *AuthServiceTestSuite) TestRequestAuthCode_Success() {
 	email := "test@example.com"
+	user := &userv1.User{
+		Id:        "user-123",
+		Email:     email,
+		FullName:  "Test User",
+		CreatedAt: timestamppb.Now(),
+		UpdatedAt: timestamppb.Now(),
+	}
 
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(user, true, nil)
 	suite.mockRepo.On("Create", mock.Anything, mock.MatchedBy(func(authCode *models.AuthCode) bool {
 		authCode.ID = uuid.NewString()
-		return authCode.UserID == email &&
+		return authCode.UserID == user.Id &&
 			len(authCode.Code) == 6 &&
 			authCode.ExpiresAt.After(time.Now()) &&
 			authCode.UsedAt == nil
 	})).Return(nil)
+	suite.mockPublisher.On("PublishEvent", mock.Anything, mock.AnythingOfType("*messaging.AuthCodeRequestedEvent")).Return(nil).Maybe()
 
 	result, err := suite.authService.RequestAuthCode(context.Background(), email)
 
@@ -158,9 +231,43 @@ func (suite *AuthServiceTestSuite) TestRequestAuthCode_InvalidEmail() {
 	assert.Equal(suite.T(), ErrEmailInvalid, err)
 }
 
-func (suite *AuthServiceTestSuite) TestRequestAuthCode_RepositoryError() {
+func (suite *AuthServiceTestSuite) TestRequestAuthCode_UserNotFound() {
 	email := "test@example.com"
 
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(nil, false, nil)
+
+	result, err := suite.authService.RequestAuthCode(context.Background(), email)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Equal(suite.T(), ErrUserNotFound, err)
+}
+
+func (suite *AuthServiceTestSuite) TestRequestAuthCode_UserServiceUnavailable() {
+	email := "test@example.com"
+	retryableErr := &net.OpError{Op: "dial", Err: errors.New("connection refused")}
+
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(nil, false, retryableErr)
+	suite.mockPublisher.On("PublishEvent", mock.Anything, mock.AnythingOfType("*messaging.AuthCodeFailedEvent")).Return(nil).Maybe()
+
+	result, err := suite.authService.RequestAuthCode(context.Background(), email)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Equal(suite.T(), ErrUserServiceUnavailable, err)
+}
+
+func (suite *AuthServiceTestSuite) TestRequestAuthCode_RepositoryError() {
+	email := "test@example.com"
+	user := &userv1.User{
+		Id:        "user-123",
+		Email:     email,
+		FullName:  "Test User",
+		CreatedAt: timestamppb.Now(),
+		UpdatedAt: timestamppb.Now(),
+	}
+
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(user, true, nil)
 	suite.mockRepo.On("Create", mock.Anything, mock.Anything).Return(errors.New("database error"))
 
 	result, err := suite.authService.RequestAuthCode(context.Background(), email)
@@ -172,9 +279,18 @@ func (suite *AuthServiceTestSuite) TestRequestAuthCode_RepositoryError() {
 
 func (suite *AuthServiceTestSuite) TestRequestAuthCode_RateLimit() {
 	email := "test@example.com"
+	user := &userv1.User{
+		Id:        "user-123",
+		Email:     email,
+		FullName:  "Test User",
+		CreatedAt: timestamppb.Now(),
+		UpdatedAt: timestamppb.Now(),
+	}
 
 	// Setup rate limiting by making multiple requests
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(user, true, nil).Times(4)
 	suite.mockRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Times(3)
+	suite.mockPublisher.On("PublishEvent", mock.Anything, mock.AnythingOfType("*messaging.AuthCodeRequestedEvent")).Return(nil).Maybe()
 
 	// Make 3 successful requests (should reach limit)
 	for i := 0; i < 3; i++ {
@@ -184,6 +300,7 @@ func (suite *AuthServiceTestSuite) TestRequestAuthCode_RateLimit() {
 	}
 
 	// 4th request should be rate limited
+	suite.mockPublisher.On("PublishEvent", mock.Anything, mock.AnythingOfType("*messaging.AuthCodeFailedEvent")).Return(nil).Maybe()
 	result, err := suite.authService.RequestAuthCode(context.Background(), email)
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -194,9 +311,16 @@ func (suite *AuthServiceTestSuite) TestRequestAuthCode_RateLimit() {
 func (suite *AuthServiceTestSuite) TestVerifyAuthCode_Success() {
 	email := "test@example.com"
 	code := "123456"
+	user := &userv1.User{
+		Id:        "user-123",
+		Email:     email,
+		FullName:  "Test User",
+		CreatedAt: timestamppb.Now(),
+		UpdatedAt: timestamppb.Now(),
+	}
 	authCode := &models.AuthCode{
 		ID:        "auth-id",
-		UserID:    email,
+		UserID:    user.Id,
 		Code:      code,
 		ExpiresAt: time.Now().Add(5 * time.Minute),
 		UsedAt:    nil,
@@ -208,15 +332,17 @@ func (suite *AuthServiceTestSuite) TestVerifyAuthCode_Success() {
 		RefreshToken: "refresh-token",
 	}
 
-	suite.mockRepo.On("FindByUserID", mock.Anything, email).Return(authCode, nil)
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(user, true, nil)
+	suite.mockRepo.On("FindByUserID", mock.Anything, user.Id).Return(authCode, nil)
 	suite.mockRepo.On("MarkAsUsed", mock.Anything, authCode.ID).Return(nil)
-	suite.mockJWT.On("GenerateTokenPair", mock.Anything, email, email).Return(expectedTokenPair, nil)
+	suite.mockJWT.On("GenerateTokenPair", mock.Anything, user.Id, email).Return(expectedTokenPair, nil)
+	suite.mockPublisher.On("PublishEvent", mock.Anything, mock.AnythingOfType("*messaging.AuthCodeVerifiedEvent")).Return(nil).Maybe()
 
 	result, err := suite.authService.VerifyAuthCode(context.Background(), email, code)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), email, result.UserID)
+	assert.Equal(suite.T(), user.Id, result.UserID)
 	assert.Equal(suite.T(), email, result.Email)
 	assert.Equal(suite.T(), expectedTokenPair, result.TokenPair)
 	assert.False(suite.T(), result.IsNewUser)
@@ -247,11 +373,33 @@ func (suite *AuthServiceTestSuite) TestVerifyAuthCode_InvalidEmail() {
 	assert.Equal(suite.T(), ErrEmailInvalid, err)
 }
 
-func (suite *AuthServiceTestSuite) TestVerifyAuthCode_CodeNotFound() {
+func (suite *AuthServiceTestSuite) TestVerifyAuthCode_UserNotFound() {
 	email := "test@example.com"
 	code := "123456"
 
-	suite.mockRepo.On("FindByUserID", mock.Anything, email).Return(nil, repository.ErrAuthCodeNotFound)
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(nil, false, nil)
+	suite.mockPublisher.On("PublishEvent", mock.Anything, mock.AnythingOfType("*messaging.AuthCodeFailedEvent")).Return(nil).Maybe()
+
+	result, err := suite.authService.VerifyAuthCode(context.Background(), email, code)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Equal(suite.T(), ErrUserNotFound, err)
+}
+
+func (suite *AuthServiceTestSuite) TestVerifyAuthCode_CodeNotFound() {
+	email := "test@example.com"
+	code := "123456"
+	user := &userv1.User{
+		Id:        "user-123",
+		Email:     email,
+		FullName:  "Test User",
+		CreatedAt: timestamppb.Now(),
+		UpdatedAt: timestamppb.Now(),
+	}
+
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(user, true, nil)
+	suite.mockRepo.On("FindByUserID", mock.Anything, user.Id).Return(nil, repository.ErrAuthCodeNotFound)
 
 	result, err := suite.authService.VerifyAuthCode(context.Background(), email, code)
 
@@ -263,16 +411,24 @@ func (suite *AuthServiceTestSuite) TestVerifyAuthCode_CodeNotFound() {
 func (suite *AuthServiceTestSuite) TestVerifyAuthCode_WrongCode() {
 	email := "test@example.com"
 	code := "123456"
+	user := &userv1.User{
+		Id:        "user-123",
+		Email:     email,
+		FullName:  "Test User",
+		CreatedAt: timestamppb.Now(),
+		UpdatedAt: timestamppb.Now(),
+	}
 	authCode := &models.AuthCode{
 		ID:        "auth-id",
-		UserID:    email,
+		UserID:    user.Id,
 		Code:      "654321", // Different code
 		ExpiresAt: time.Now().Add(5 * time.Minute),
 		UsedAt:    nil,
 		CreatedAt: time.Now(),
 	}
 
-	suite.mockRepo.On("FindByUserID", mock.Anything, email).Return(authCode, nil)
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(user, true, nil)
+	suite.mockRepo.On("FindByUserID", mock.Anything, user.Id).Return(authCode, nil)
 
 	result, err := suite.authService.VerifyAuthCode(context.Background(), email, code)
 
@@ -284,16 +440,24 @@ func (suite *AuthServiceTestSuite) TestVerifyAuthCode_WrongCode() {
 func (suite *AuthServiceTestSuite) TestVerifyAuthCode_ExpiredCode() {
 	email := "test@example.com"
 	code := "123456"
+	user := &userv1.User{
+		Id:        "user-123",
+		Email:     email,
+		FullName:  "Test User",
+		CreatedAt: timestamppb.Now(),
+		UpdatedAt: timestamppb.Now(),
+	}
 	authCode := &models.AuthCode{
 		ID:        "auth-id",
-		UserID:    email,
+		UserID:    user.Id,
 		Code:      code,
 		ExpiresAt: time.Now().Add(-5 * time.Minute), // Expired
 		UsedAt:    nil,
 		CreatedAt: time.Now(),
 	}
 
-	suite.mockRepo.On("FindByUserID", mock.Anything, email).Return(authCode, nil)
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(user, true, nil)
+	suite.mockRepo.On("FindByUserID", mock.Anything, user.Id).Return(authCode, nil)
 
 	result, err := suite.authService.VerifyAuthCode(context.Background(), email, code)
 
@@ -305,17 +469,25 @@ func (suite *AuthServiceTestSuite) TestVerifyAuthCode_ExpiredCode() {
 func (suite *AuthServiceTestSuite) TestVerifyAuthCode_UsedCode() {
 	email := "test@example.com"
 	code := "123456"
+	user := &userv1.User{
+		Id:        "user-123",
+		Email:     email,
+		FullName:  "Test User",
+		CreatedAt: timestamppb.Now(),
+		UpdatedAt: timestamppb.Now(),
+	}
 	usedTime := time.Now().Add(-1 * time.Minute)
 	authCode := &models.AuthCode{
 		ID:        "auth-id",
-		UserID:    email,
+		UserID:    user.Id,
 		Code:      code,
 		ExpiresAt: time.Now().Add(5 * time.Minute),
 		UsedAt:    &usedTime, // Already used
 		CreatedAt: time.Now(),
 	}
 
-	suite.mockRepo.On("FindByUserID", mock.Anything, email).Return(authCode, nil)
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(user, true, nil)
+	suite.mockRepo.On("FindByUserID", mock.Anything, user.Id).Return(authCode, nil)
 
 	result, err := suite.authService.VerifyAuthCode(context.Background(), email, code)
 
@@ -380,7 +552,7 @@ func (suite *AuthServiceTestSuite) TestCleanExpiredCodes_RepositoryError() {
 
 // Configuration tests
 func (suite *AuthServiceTestSuite) TestNewAuthService_DefaultConfig() {
-	authService := NewAuthService(suite.mockRepo, suite.mockJWT, nil)
+	authService := NewAuthService(suite.mockRepo, suite.mockJWT, suite.mockUserClient, suite.mockPublisher, nil)
 
 	assert.NotNil(suite.T(), authService)
 }
@@ -395,7 +567,7 @@ func (suite *AuthServiceTestSuite) TestNewAuthService_CustomConfig() {
 		CleanupInterval:    30 * time.Minute,
 	}
 
-	authService := NewAuthService(suite.mockRepo, suite.mockJWT, config)
+	authService := NewAuthService(suite.mockRepo, suite.mockJWT, suite.mockUserClient, suite.mockPublisher, config)
 
 	assert.NotNil(suite.T(), authService)
 }
@@ -461,18 +633,119 @@ func TestGenerateAuthCode_DifferentLengths(t *testing.T) {
 	}
 }
 
+// Event publishing tests
+func (suite *AuthServiceTestSuite) TestVerifyAuthCode_TokenGenerationFailed() {
+	email := "test@example.com"
+	code := "123456"
+	user := &userv1.User{
+		Id:        "user-123",
+		Email:     email,
+		FullName:  "Test User",
+		CreatedAt: timestamppb.Now(),
+		UpdatedAt: timestamppb.Now(),
+	}
+	authCode := &models.AuthCode{
+		ID:        "auth-id",
+		UserID:    user.Id,
+		Code:      code,
+		ExpiresAt: time.Now().Add(5 * time.Minute),
+		UsedAt:    nil,
+		CreatedAt: time.Now(),
+	}
+
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(user, true, nil)
+	suite.mockRepo.On("FindByUserID", mock.Anything, user.Id).Return(authCode, nil)
+	suite.mockRepo.On("MarkAsUsed", mock.Anything, authCode.ID).Return(nil)
+	suite.mockJWT.On("GenerateTokenPair", mock.Anything, user.Id, email).Return(nil, errors.New("token generation failed"))
+	suite.mockPublisher.On("PublishEvent", mock.Anything, mock.AnythingOfType("*messaging.AuthCodeFailedEvent")).Return(nil).Maybe()
+
+	result, err := suite.authService.VerifyAuthCode(context.Background(), email, code)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to generate tokens")
+}
+
+func (suite *AuthServiceTestSuite) TestRequestAuthCode_PublishingError() {
+	email := "test@example.com"
+	user := &userv1.User{
+		Id:        "user-123",
+		Email:     email,
+		FullName:  "Test User",
+		CreatedAt: timestamppb.Now(),
+		UpdatedAt: timestamppb.Now(),
+	}
+
+	suite.mockUserClient.On("GetUserByEmail", mock.Anything, email).Return(user, true, nil)
+	suite.mockRepo.On("Create", mock.Anything, mock.MatchedBy(func(authCode *models.AuthCode) bool {
+		authCode.ID = uuid.NewString()
+		return authCode.UserID == user.Id &&
+			len(authCode.Code) == 6 &&
+			authCode.ExpiresAt.After(time.Now()) &&
+			authCode.UsedAt == nil
+	})).Return(nil)
+	// Publishing fails but should not affect the main flow
+	suite.mockPublisher.On("PublishEvent", mock.Anything, mock.AnythingOfType("*messaging.AuthCodeRequestedEvent")).Return(errors.New("publishing failed")).Maybe()
+
+	result, err := suite.authService.RequestAuthCode(context.Background(), email)
+
+	// Should still succeed despite publishing error
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.True(suite.T(), result.Success)
+}
+
+// Error handling tests
+func (suite *AuthServiceTestSuite) TestIsRetryableError() {
+	service := &authService{}
+
+	// Test retryable errors
+	retryableErrors := []error{
+		&net.OpError{Op: "dial", Err: errors.New("connection refused")},
+		&net.OpError{Op: "read", Err: errors.New("timeout")},
+		errors.New("deadline exceeded"),
+		errors.New("unavailable"),
+		errors.New("circuit breaker open"),
+		errors.New("connection reset"),
+		errors.New("no route to host"),
+	}
+
+	for _, err := range retryableErrors {
+		assert.True(suite.T(), service.isRetryableError(err), "Expected %v to be retryable", err)
+	}
+
+	// Test non-retryable errors
+	nonRetryableErrors := []error{
+		errors.New("invalid argument"),
+		errors.New("not found"),
+		errors.New("permission denied"),
+	}
+
+	for _, err := range nonRetryableErrors {
+		assert.False(suite.T(), service.isRetryableError(err), "Expected %v to be non-retryable", err)
+	}
+
+	// Test nil error
+	assert.False(suite.T(), service.isRetryableError(nil))
+}
+
 // Benchmark tests
 func BenchmarkRequestAuthCode(b *testing.B) {
 	mockRepo := new(MockAuthCodeRepository)
 	mockJWT := new(MockJWTService)
+	mockUserClient := new(MockUserServiceClient)
+	mockPublisher := new(MockPublisher)
 	config := &AuthConfig{
 		CodeLength:         6,
 		CodeExpiryDuration: 5 * time.Minute,
 		MaxCodesPerEmail:   1000, // High limit for benchmarking
 	}
-	service := NewAuthService(mockRepo, mockJWT, config)
+	service := NewAuthService(mockRepo, mockJWT, mockUserClient, mockPublisher, config)
 
+	user := &userv1.User{Id: "user-123", Email: "test@example.com"}
+	mockUserClient.On("GetUserByEmail", mock.Anything, mock.Anything).Return(user, true, nil)
 	mockRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	mockPublisher.On("PublishEvent", mock.Anything, mock.Anything).Return(nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

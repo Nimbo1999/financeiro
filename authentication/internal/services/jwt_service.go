@@ -216,3 +216,11 @@ func (s *jwtService) validateToken(tokenString string, expectedType TokenType) (
 
 	return claims, nil
 }
+
+func LoadRSAPrivateKey(key []byte) (*rsa.PrivateKey, error) {
+	return jwt.ParseRSAPrivateKeyFromPEM(key)
+}
+
+func LoadRSAPublicKey(key []byte) (*rsa.PublicKey, error) {
+	return jwt.ParseRSAPublicKeyFromPEM(key)
+}

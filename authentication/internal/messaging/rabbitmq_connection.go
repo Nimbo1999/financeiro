@@ -18,19 +18,19 @@ type RabbitMQConnection interface {
 }
 
 type RabbitMQConfig struct {
-	URL             string
-	ReconnectDelay  time.Duration
-	MaxRetries      int
-	HeartbeatDelay  time.Duration
-	ConnectionName  string
+	URL            string
+	ReconnectDelay time.Duration
+	MaxRetries     int
+	HeartbeatDelay time.Duration
+	ConnectionName string
 }
 
 type rabbitMQConnection struct {
-	config     RabbitMQConfig
-	connection *amqp.Connection
-	mutex      sync.RWMutex
+	config      RabbitMQConfig
+	connection  *amqp.Connection
+	mutex       sync.RWMutex
 	isConnected bool
-	retryCount int
+	retryCount  int
 }
 
 func NewRabbitMQConnection(config RabbitMQConfig) RabbitMQConnection {

@@ -39,7 +39,7 @@ type publisher struct {
 }
 
 // NewPublisher creates a new RabbitMQ publisher
-func NewPublisher(connection RabbitMQConnection, config PublisherConfig) (Publisher, error) {
+func NewPublisher(connection RabbitMQConnection, queueManager QueueManager, config PublisherConfig) (Publisher, error) {
 	if config.RetryDelay == 0 {
 		config.RetryDelay = 1 * time.Second
 	}
@@ -62,6 +62,15 @@ func NewPublisher(connection RabbitMQConnection, config PublisherConfig) (Publis
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup publisher channel: %w", err)
 	}
+
+	if queueManager != nil {
+		err = queueManager.SetupTopology()
+		if err != nil {
+			p.Close()
+			return nil, fmt.Errorf("failed to setup RabbitMQ topology: %w", err)
+		}
+	}
+	log.Println("RabbitMQ publisher created and ready")
 
 	return p, nil
 }
@@ -153,10 +162,10 @@ func (p *publisher) publishSingle(ctx context.Context, event Event) error {
 		Type:         string(event.GetType()),
 		Body:         body,
 		Headers: amqp.Table{
-			"event_type":    string(event.GetType()),
-			"event_id":      event.GetID(),
-			"published_at":  time.Now().UTC().Format(time.RFC3339),
-			"publisher":     "authentication-service",
+			"event_type":   string(event.GetType()),
+			"event_id":     event.GetID(),
+			"published_at": time.Now().UTC().Format(time.RFC3339),
+			"publisher":    "authentication-service",
 		},
 	}
 

@@ -28,9 +28,9 @@ func main() {
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
 	serverErrors := make(chan error, 1)
-	go func() {
-		serverErrors <- application.Run(configs.Port)
-	}()
+	go func(cfg *config.Config) {
+		serverErrors <- application.Run(cfg)
+	}(configs)
 
 	select {
 	case err := <-serverErrors:

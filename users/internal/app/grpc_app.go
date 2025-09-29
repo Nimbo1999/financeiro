@@ -12,6 +12,7 @@ import (
 	"github.com/nimbo1999/financeiro/users/internal/services"
 	userpb "github.com/nimbo1999/financeiro/users/pkg/grpc/users/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -33,6 +34,17 @@ func (a *App) RunGRPC(port string) error {
 			interceptors.RecoveryUnaryInterceptor(),
 			interceptors.LoggingUnaryInterceptor(),
 		),
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             30 * time.Second, // Minimum time between client pings
+			PermitWithoutStream: true,             // Allow pings without active streams
+		}),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			MaxConnectionIdle:     15 * time.Minute, // Close connection after idle time
+			MaxConnectionAge:      30 * time.Minute, // Close connection after this time
+			MaxConnectionAgeGrace: 5 * time.Second,  // Grace period for closing
+			Time:                  15 * time.Second, // Server ping interval
+			Timeout:               1 * time.Second,  // Ping timeout
+		}),
 	)
 
 	// Create service dependencies

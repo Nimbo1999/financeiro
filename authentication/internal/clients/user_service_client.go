@@ -42,13 +42,10 @@ func NewUserServiceClient(config UserServiceConfig) (UserServiceClient, error) {
 		config.MaxRetries = 3
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), config.ConnectTimeout)
-	defer cancel()
-
-	conn, err := grpc.DialContext(ctx, config.Address,
+	conn, err := grpc.NewClient(config.Address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
-			Time:                10 * time.Second,
+			Time:                30 * time.Second,
 			Timeout:             3 * time.Second,
 			PermitWithoutStream: true,
 		}),
@@ -57,7 +54,31 @@ func NewUserServiceClient(config UserServiceConfig) (UserServiceClient, error) {
 		),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to user service at %s: %w", config.Address, err)
+		return nil, fmt.Errorf("failed to create user service client: %w", err)
+	}
+
+	// Verify connection within timeout
+	ctx, cancel := context.WithTimeout(context.Background(), config.ConnectTimeout)
+	defer cancel()
+
+	// Try to establish connection by attempting to connect
+	conn.Connect()
+
+	// Wait for connection to be established or timeout
+	for {
+		state := conn.GetState()
+		if state == connectivity.Ready {
+			break
+		}
+		if state == connectivity.TransientFailure {
+			conn.Close()
+			return nil, fmt.Errorf("failed to connect to user service at %s: connection failed", config.Address)
+		}
+
+		if !conn.WaitForStateChange(ctx, state) {
+			conn.Close()
+			return nil, fmt.Errorf("failed to connect to user service at %s: timeout after %v", config.Address, config.ConnectTimeout)
+		}
 	}
 
 	client := userv1.NewUserServiceClient(conn)

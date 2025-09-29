@@ -5,7 +5,7 @@ import (
 )
 
 type AuthCode struct {
-	ID        string     `json:"id" gorm:"primaryKey"`
+	ID        string     `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID    string     `json:"user_id"`
 	Code      string     `json:"code"`
 	ExpiresAt time.Time  `json:"expires_at"`
