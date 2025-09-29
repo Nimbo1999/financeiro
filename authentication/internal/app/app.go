@@ -17,13 +17,15 @@ import (
 	"github.com/nimbo1999/financeiro/authentication/internal/messaging"
 	"github.com/nimbo1999/financeiro/authentication/internal/repository"
 	"github.com/nimbo1999/financeiro/authentication/internal/services"
+	"google.golang.org/grpc"
 	"gorm.io/gorm"
 )
 
 type App struct {
-	db     *gorm.DB
-	server *http.Server
-	wg     *sync.WaitGroup
+	db         *gorm.DB
+	server     *http.Server
+	grpcServer *grpc.Server
+	wg         *sync.WaitGroup
 }
 
 func New(db *gorm.DB) *App {
@@ -41,23 +43,12 @@ func (a *App) requestTrackingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (a *App) Run(config *config.Config) error {
+func (a *App) RunHTTP(config *config.Config, jwtService services.JWTService) error {
 	if config.HTTPPort == "" {
 		config.HTTPPort = "8080"
 	}
 
-	rsaKeys, err := readRSAKeys()
-	if err != nil {
-		return fmt.Errorf("failed to read RSA keys: %w", err)
-	}
-
-	jwtConfig := &services.JWTConfig{
-		PrivateKey: rsaKeys.PrivateKey,
-		PublicKey:  rsaKeys.PublicKey,
-	}
-
 	authCodeRepository := repository.NewPostgresAuthCodeRepository(a.db)
-	jwtService := services.NewJWTService(jwtConfig)
 	userServiceClient, err := clients.NewUserServiceClient(clients.UserServiceConfig{
 		Address: config.UserGRPCAddress,
 	})
@@ -98,19 +89,34 @@ func (a *App) Run(config *config.Config) error {
 		Handler: mux,
 	}
 
-	fmt.Println("Starting server on port:", config.HTTPPort)
+	fmt.Println("Starting HTTP server on port:", config.HTTPPort)
 	return a.server.ListenAndServe()
 }
 
-func (a *App) Shutdown(ctx context.Context) error {
-	fmt.Println("Shutting down server gracefully...")
+func (a *App) InitializeJWTService() (services.JWTService, error) {
+	// @TODO: for debug we are reading keys from files, but in production we should use a secure vault like AWS KMS or HashiCorp Vault
+	rsaKeys, err := readRSAKeys()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read RSA keys: %w", err)
+	}
+
+	jwtConfig := &services.JWTConfig{
+		PrivateKey: rsaKeys.PrivateKey,
+		PublicKey:  rsaKeys.PublicKey,
+	}
+
+	return services.NewJWTService(jwtConfig), nil
+}
+
+func (a *App) ShutdownHTTP(ctx context.Context) error {
+	fmt.Println("Shutting down HTTP server gracefully...")
 
 	shutdownCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	if a.server != nil {
 		if err := a.server.Shutdown(shutdownCtx); err != nil {
-			return fmt.Errorf("server shutdown error: %w", err)
+			return fmt.Errorf("HTTP server shutdown error: %w", err)
 		}
 	}
 
@@ -122,11 +128,42 @@ func (a *App) Shutdown(ctx context.Context) error {
 
 	select {
 	case <-done:
-		fmt.Println("All requests completed")
+		fmt.Println("All HTTP requests completed")
 	case <-shutdownCtx.Done():
-		fmt.Println("Shutdown timeout reached, forcing exit")
+		fmt.Println("HTTP shutdown timeout reached, forcing exit")
 	}
 
+	fmt.Println("HTTP server shutdown complete")
+	return nil
+}
+
+func (a *App) Shutdown(ctx context.Context) error {
+	fmt.Println("Shutting down all servers gracefully...")
+
+	// Shutdown both HTTP and gRPC servers concurrently
+	httpErrChan := make(chan error, 1)
+	grpcErrChan := make(chan error, 1)
+
+	go func() {
+		httpErrChan <- a.ShutdownHTTP(ctx)
+	}()
+
+	go func() {
+		grpcErrChan <- a.ShutdownGRPC(ctx)
+	}()
+
+	// Wait for both shutdowns to complete
+	var httpErr, grpcErr error
+	for i := 0; i < 2; i++ {
+		select {
+		case err := <-httpErrChan:
+			httpErr = err
+		case err := <-grpcErrChan:
+			grpcErr = err
+		}
+	}
+
+	// Close database connections
 	if a.db != nil {
 		sqlDB, err := a.db.DB()
 		if err == nil {
@@ -137,7 +174,15 @@ func (a *App) Shutdown(ctx context.Context) error {
 		fmt.Println("Database connections closed")
 	}
 
-	fmt.Println("Server shutdown complete")
+	// Return the first error encountered
+	if httpErr != nil {
+		return fmt.Errorf("HTTP shutdown error: %w", httpErr)
+	}
+	if grpcErr != nil {
+		return fmt.Errorf("gRPC shutdown error: %w", grpcErr)
+	}
+
+	fmt.Println("All servers shutdown complete")
 	return nil
 }
 

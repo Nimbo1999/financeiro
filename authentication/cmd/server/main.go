@@ -24,13 +24,26 @@ func main() {
 
 	application := app.New(db)
 
+	// Initialize JWT service (shared between HTTP and gRPC servers)
+	jwtService, err := application.InitializeJWTService()
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize JWT service: %v", err))
+	}
+
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
-	serverErrors := make(chan error, 1)
-	go func(cfg *config.Config) {
-		serverErrors <- application.Run(cfg)
-	}(configs)
+	serverErrors := make(chan error, 2)
+
+	// Start HTTP server
+	go func() {
+		serverErrors <- application.RunHTTP(configs, jwtService)
+	}()
+
+	// Start gRPC server
+	go func() {
+		serverErrors <- application.RunGRPC(configs.GRPCPort, jwtService)
+	}()
 
 	select {
 	case err := <-serverErrors:
