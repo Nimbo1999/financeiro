@@ -18,12 +18,13 @@ type ServerConfig struct {
 }
 
 type ServiceConfig struct {
-	AuthServiceURL string
-	UserServiceURL string
+	AuthServiceURL     string
+	AuthServiceGRPCURL string
+	UserServiceURL     string
 	// Add more services as needed
 }
 
-func LoadFromEnv() (*Config, error) {
+func Load() (*Config, error) {
 	port, err := getEnvAsInt("GATEWAY_PORT", 8080)
 	if err != nil {
 		return nil, fmt.Errorf("invalid GATEWAY_PORT: %w", err)
@@ -39,8 +40,9 @@ func LoadFromEnv() (*Config, error) {
 		return nil, fmt.Errorf("invalid GATEWAY_WRITE_TIMEOUT: %w", err)
 	}
 
-	authServiceURL := getEnv("AUTH_SERVICE_URL", "http://localhost:8081")
-	userServiceURL := getEnv("USER_SERVICE_URL", "http://localhost:8082")
+	authServiceURL := getEnv("AUTH_SERVICE_URL", "http://localhost:8080")
+	authServiceGRPCURL := getEnv("AUTH_SERVICE_GRPC_URL", "localhost:9090")
+	userServiceURL := getEnv("USER_SERVICE_URL", "http://localhost:8080")
 
 	return &Config{
 		Server: ServerConfig{
@@ -49,8 +51,9 @@ func LoadFromEnv() (*Config, error) {
 			WriteTimeout: writeTimeout,
 		},
 		Services: ServiceConfig{
-			AuthServiceURL: authServiceURL,
-			UserServiceURL: userServiceURL,
+			AuthServiceURL:     authServiceURL,
+			AuthServiceGRPCURL: authServiceGRPCURL,
+			UserServiceURL:     userServiceURL,
 		},
 	}, nil
 }

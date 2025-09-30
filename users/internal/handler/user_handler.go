@@ -27,6 +27,7 @@ func NewUserHandler(service services.UserService) *UserHandler {
 
 func (h *UserHandler) RegisterRoutes(router chi.Router) {
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
+	router.Get("/health", h.HealthCheck)
 	router.Get("/{id}", h.GetUserByID)
 	router.Get("/", h.ListUsers)
 	router.Post("/", h.CreateUser)
@@ -121,4 +122,9 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	})
+}
+
+func (h *UserHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }

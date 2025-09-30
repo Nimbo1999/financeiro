@@ -2,11 +2,14 @@ package routes
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/nimbo1999/financeiro/gateway/internal/clients"
 	"github.com/nimbo1999/financeiro/gateway/internal/config"
+	authmw "github.com/nimbo1999/financeiro/gateway/internal/middleware"
 	"github.com/nimbo1999/financeiro/gateway/internal/proxy"
 )
 
@@ -15,21 +18,49 @@ type Router struct {
 	mux              *chi.Mux
 	proxy            *proxy.LoggingProxy
 	healthAggregator *proxy.HealthAggregator
+	authMiddleware   *authmw.AuthMiddleware
+	authClient       *clients.AuthServiceClient
 }
 
 func NewRouter(cfg *config.Config) *Router {
 	// Use factory to create proxy components following SOLID principles
 	factory := proxy.NewFactory(cfg)
 
+	// Create auth service gRPC client
+	authClient, err := clients.NewAuthServiceClient(cfg.Services.AuthServiceGRPCURL)
+	if err != nil {
+		log.Fatalf("Failed to create auth service client: %v", err)
+	}
+
+	// Define public paths that don't require authentication
+	publicPaths := []string{
+		"/health",
+		"/health/*",
+		"/auth/*",
+	}
+
+	// Create authentication middleware
+	authMiddleware := authmw.NewAuthMiddleware(authClient, publicPaths)
+
 	r := &Router{
 		config:           cfg,
 		mux:              chi.NewRouter(),
 		proxy:            factory.CreateLoggingProxy(),
 		healthAggregator: factory.CreateHealthAggregator(),
+		authMiddleware:   authMiddleware,
+		authClient:       authClient,
 	}
 	r.setupMiddleware()
 	r.setupRoutes()
 	return r
+}
+
+// Close closes resources held by the router
+func (r *Router) Close() error {
+	if r.authClient != nil {
+		return r.authClient.Close()
+	}
+	return nil
 }
 
 func (r *Router) setupMiddleware() {
@@ -38,6 +69,9 @@ func (r *Router) setupMiddleware() {
 	r.mux.Use(middleware.RealIP)
 	r.mux.Use(middleware.Logger)
 	r.mux.Use(middleware.Recoverer)
+
+	// Authentication middleware (applies to all routes, but checks for public paths)
+	r.mux.Use(r.authMiddleware.Handler)
 }
 
 func (r *Router) setupRoutes() {
@@ -54,7 +88,7 @@ func (r *Router) setupRoutes() {
 		router.HandleFunc("/*", r.proxyToAuthService)
 	})
 
-	// User service routes (will be protected in Step 3.3)
+	// User service routes (protected - requires authentication)
 	r.mux.Route("/users", func(router chi.Router) {
 		router.Use(middleware.PathRewrite("/users", ""))
 		router.HandleFunc("/*", r.proxyToUserService)

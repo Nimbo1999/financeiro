@@ -16,13 +16,14 @@ import (
 
 func main() {
 	// Load configuration
-	cfg, err := config.LoadFromEnv()
+	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
 	// Initialize router
 	router := routes.NewRouter(cfg)
+	defer router.Close() // Cleanup gRPC connections on shutdown
 
 	// Create HTTP server
 	server := &http.Server{

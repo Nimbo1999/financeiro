@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nimbo1999/financeiro/authentication/internal/services"
 )
 
@@ -106,15 +107,16 @@ func (h *AuthHandler) RefreshTokenHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (h *AuthHandler) RegisterRoutes(r chi.Router) chi.Router {
-	return r.Route("/", func(r chi.Router) {
+	return r.Route("/", func(router chi.Router) {
 		// Apply middleware to all auth routes
-		r.Use(ContentTypeMiddleware)
-		r.Use(ValidationMiddleware)
-		r.Use(RateLimitMiddleware)
+		router.Use(ContentTypeMiddleware)
+		router.Use(ValidationMiddleware)
+		router.Use(RateLimitMiddleware)
+		router.Use(middleware.GetHead)
 
 		// Public authentication endpoints
-		r.Post("/request-code", h.RequestCodeHandler)
-		r.Post("/verify-code", h.VerifyCodeHandler)
-		r.Post("/refresh", h.RefreshTokenHandler)
+		router.Post("/request-code", h.RequestCodeHandler)
+		router.Post("/verify-code", h.VerifyCodeHandler)
+		router.Post("/refresh", h.RefreshTokenHandler)
 	})
 }

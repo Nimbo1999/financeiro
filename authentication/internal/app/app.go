@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nimbo1999/financeiro/authentication/internal/clients"
 	"github.com/nimbo1999/financeiro/authentication/internal/config"
 	"github.com/nimbo1999/financeiro/authentication/internal/handler"
@@ -77,7 +76,6 @@ func (a *App) RunHTTP(config *config.Config, jwtService services.JWTService) err
 	mux := chi.NewMux()
 	// Global middleware
 	mux.Use(a.requestTrackingMiddleware)
-	mux.Use(middleware.GetHead)
 	mux.Use(handler.CorsMiddleware())
 	mux.Use(handler.RecoveryMiddleware)
 	mux.Use(handler.LoggingMiddleware)

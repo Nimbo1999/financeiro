@@ -20,9 +20,18 @@ migrate create -seq -dir migrations -ext sql [NAME]
 
 ### TODOS:
 
-1. Verify the possibility of creating a finance app RabbitMQ Client class to use accross
+1. Generate documentations on how the finance project handles the following topics:
+
+   a. Project design principles and code pattern documentation;
+
+   b. What is the testing pattern of the project;
+
+   c. How each service should implement the gRPC connection, the gRPC client is exposed by
+   each package on their /pkg folder.
+
+2. Verify the possibility of creating a finance app RabbitMQ Client class to use accross
    the different services of the finance platform. The goal would be extracting the RabbitMQ
    implementation that was build on the authentication service
    authentication/internal/messaging/\*.go and move to a module where the applications can
    reuse the client without having to implement the logic internally.
-2. Review the gRPC transport credentials, how would I grant TLS support for the communications?
+3. Review the gRPC transport credentials, how would I grant TLS support for the communications?

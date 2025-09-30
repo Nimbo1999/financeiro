@@ -26,7 +26,7 @@ func (hc *HTTPHealthChecker) CheckHealth(name, baseURL string) ServiceHealth {
 
 	health := ServiceHealth{
 		Name:      name,
-		URL:       baseURL,
+		URL:       healthURL,
 		Timestamp: time.Now(),
 	}
 
@@ -44,6 +44,5 @@ func (hc *HTTPHealthChecker) CheckHealth(name, baseURL string) ServiceHealth {
 		health.Status = "unhealthy"
 		health.Error = fmt.Sprintf("HTTP %d", resp.StatusCode)
 	}
-
 	return health
 }
