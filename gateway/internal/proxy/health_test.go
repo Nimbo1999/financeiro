@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -110,7 +111,7 @@ func (suite *HTTPHealthCheckerTestSuite) TestCheckHealth_Healthy() {
 	// Assert
 	assert.Equal(suite.T(), "healthy", result.Status)
 	assert.Equal(suite.T(), "test-service", result.Name)
-	assert.Equal(suite.T(), server.URL, result.URL)
+	assert.Equal(suite.T(), fmt.Sprintf("%s/health", server.URL), result.URL)
 	assert.Empty(suite.T(), result.Error)
 }
 
