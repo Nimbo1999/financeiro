@@ -58,7 +58,7 @@ func TestFullAuthenticationFlow(t *testing.T) {
 
 		reqBody := RequestCodeRequest{Email: email}
 		body, _ := json.Marshal(reqBody)
-		req := httptest.NewRequest(http.MethodPost, "/auth/request-code", bytes.NewBuffer(body))
+		req := httptest.NewRequest(http.MethodPost, "/request-code", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
@@ -93,7 +93,7 @@ func TestFullAuthenticationFlow(t *testing.T) {
 
 		reqBody := VerifyCodeRequest{Email: email, Code: code}
 		body, _ := json.Marshal(reqBody)
-		req := httptest.NewRequest(http.MethodPost, "/auth/verify-code", bytes.NewBuffer(body))
+		req := httptest.NewRequest(http.MethodPost, "/verify-code", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
@@ -128,7 +128,7 @@ func TestFullAuthenticationFlow(t *testing.T) {
 
 		reqBody := RefreshTokenRequest{RefreshToken: tokens.RefreshToken}
 		body, _ := json.Marshal(reqBody)
-		req := httptest.NewRequest(http.MethodPost, "/auth/refresh", bytes.NewBuffer(body))
+		req := httptest.NewRequest(http.MethodPost, "/refresh", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
@@ -163,7 +163,7 @@ func TestMiddlewareChain(t *testing.T) {
 	handler := NewAuthHandler(mockService)
 
 	t.Run("Content Type Validation", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/auth/request-code", bytes.NewBuffer([]byte(`{"email":"test@example.com"}`)))
+		req := httptest.NewRequest(http.MethodPost, "/request-code", bytes.NewBuffer([]byte(`{"email":"test@example.com"}`)))
 		req.Header.Set("Content-Type", "text/plain") // Wrong content type
 
 		w := httptest.NewRecorder()
@@ -182,7 +182,7 @@ func TestMiddlewareChain(t *testing.T) {
 			largeBody[i] = 'a'
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/auth/request-code", bytes.NewBuffer(largeBody))
+		req := httptest.NewRequest(http.MethodPost, "/request-code", bytes.NewBuffer(largeBody))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
@@ -216,4 +216,3 @@ func TestMiddlewareChain(t *testing.T) {
 		assert.Equal(t, "INTERNAL_ERROR", response.Error.Code)
 	})
 }
-

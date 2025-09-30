@@ -83,7 +83,7 @@ func (suite *AuthHandlerTestSuite) TestRequestCodeHandler_Success() {
 	// Create request
 	reqBody := RequestCodeRequest{Email: email}
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/auth/request-code", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/request-code", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Create response recorder
@@ -106,7 +106,7 @@ func (suite *AuthHandlerTestSuite) TestRequestCodeHandler_InvalidEmail() {
 	// Create request with invalid email
 	reqBody := RequestCodeRequest{Email: "invalid-email"}
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/auth/request-code", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/request-code", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Create response recorder
@@ -129,7 +129,7 @@ func (suite *AuthHandlerTestSuite) TestRequestCodeHandler_EmptyEmail() {
 	// Create request with empty email
 	reqBody := RequestCodeRequest{Email: ""}
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/auth/request-code", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/request-code", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Create response recorder
@@ -155,7 +155,7 @@ func (suite *AuthHandlerTestSuite) TestRequestCodeHandler_ServiceError() {
 	// Create request
 	reqBody := RequestCodeRequest{Email: email}
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/auth/request-code", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/request-code", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Create response recorder
@@ -194,7 +194,7 @@ func (suite *AuthHandlerTestSuite) TestVerifyCodeHandler_Success() {
 	// Create request
 	reqBody := VerifyCodeRequest{Email: email, Code: code}
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/auth/verify-code", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/verify-code", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Create response recorder
@@ -220,7 +220,7 @@ func (suite *AuthHandlerTestSuite) TestVerifyCodeHandler_InvalidCode() {
 	// Create request
 	reqBody := VerifyCodeRequest{Email: email, Code: code}
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/auth/verify-code", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/verify-code", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Create response recorder
@@ -247,7 +247,7 @@ func (suite *AuthHandlerTestSuite) TestVerifyCodeHandler_ExpiredCode() {
 	// Create request
 	reqBody := VerifyCodeRequest{Email: email, Code: code}
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/auth/verify-code", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/verify-code", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Create response recorder
@@ -279,7 +279,7 @@ func (suite *AuthHandlerTestSuite) TestRefreshTokenHandler_Success() {
 	// Create request
 	reqBody := RefreshTokenRequest{RefreshToken: refreshToken}
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/auth/refresh", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/refresh", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Create response recorder
@@ -302,7 +302,7 @@ func (suite *AuthHandlerTestSuite) TestRefreshTokenHandler_EmptyToken() {
 	// Create request with empty refresh token
 	reqBody := RefreshTokenRequest{RefreshToken: ""}
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/auth/refresh", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/refresh", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Create response recorder
@@ -328,7 +328,7 @@ func (suite *AuthHandlerTestSuite) TestRefreshTokenHandler_InvalidToken() {
 	// Create request
 	reqBody := RefreshTokenRequest{RefreshToken: refreshToken}
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/auth/refresh", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/refresh", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Create response recorder
@@ -349,7 +349,7 @@ func (suite *AuthHandlerTestSuite) TestRefreshTokenHandler_InvalidToken() {
 
 // Test invalid JSON
 func (suite *AuthHandlerTestSuite) TestInvalidJSON() {
-	req := httptest.NewRequest(http.MethodPost, "/auth/request-code", bytes.NewBuffer([]byte("invalid json")))
+	req := httptest.NewRequest(http.MethodPost, "/request-code", bytes.NewBuffer([]byte("invalid json")))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()

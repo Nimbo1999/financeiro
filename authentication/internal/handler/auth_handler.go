@@ -18,7 +18,7 @@ func NewAuthHandler(authService services.AuthService) *AuthHandler {
 	}
 }
 
-// RequestCodeHandler handles POST /auth/request-code
+// RequestCodeHandler handles POST /request-code
 func (h *AuthHandler) RequestCodeHandler(w http.ResponseWriter, r *http.Request) {
 	var req RequestCodeRequest
 
@@ -47,7 +47,7 @@ func (h *AuthHandler) RequestCodeHandler(w http.ResponseWriter, r *http.Request)
 		SuccessResponse(response, "Authentication code generated successfully"))
 }
 
-// VerifyCodeHandler handles POST /auth/verify-code
+// VerifyCodeHandler handles POST /verify-code
 func (h *AuthHandler) VerifyCodeHandler(w http.ResponseWriter, r *http.Request) {
 	var req VerifyCodeRequest
 
@@ -78,7 +78,7 @@ func (h *AuthHandler) VerifyCodeHandler(w http.ResponseWriter, r *http.Request) 
 		SuccessResponse(response, "Authentication successful"))
 }
 
-// RefreshTokenHandler handles POST /auth/refresh
+// RefreshTokenHandler handles POST /refresh
 func (h *AuthHandler) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var req RefreshTokenRequest
 
@@ -106,7 +106,7 @@ func (h *AuthHandler) RefreshTokenHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (h *AuthHandler) RegisterRoutes(r chi.Router) chi.Router {
-	return r.Route("/auth", func(r chi.Router) {
+	return r.Route("/", func(r chi.Router) {
 		// Apply middleware to all auth routes
 		r.Use(ContentTypeMiddleware)
 		r.Use(ValidationMiddleware)
