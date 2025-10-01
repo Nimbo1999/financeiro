@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"notification/internal/models"
 
@@ -24,20 +25,37 @@ func NewNotificationRepository(db *gorm.DB) NotificationRepository {
 }
 
 func (r *notificationRepository) Create(ctx context.Context, notification *models.Notification) error {
-	return r.db.WithContext(ctx).Create(notification).Error
+	return r.db.WithContext(ctx).Omit("ID").Create(notification).Error
 }
 
 func (r *notificationRepository) MarkAsSent(ctx context.Context, id string) error {
-	// Will be implemented in Step 2
-	return nil
+	now := time.Now()
+	return r.db.WithContext(ctx).
+		Model(&models.Notification{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"status":     "sent",
+			"sent_at":    now,
+			"updated_at": now,
+		}).Error
 }
 
 func (r *notificationRepository) MarkAsFailed(ctx context.Context, id string, reason string) error {
-	// Will be implemented in Step 2
-	return nil
+	now := time.Now()
+	return r.db.WithContext(ctx).
+		Model(&models.Notification{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"status":        "failed",
+			"failed_reason": reason,
+			"updated_at":    now,
+		}).Error
 }
 
 func (r *notificationRepository) IncrementRetryCount(ctx context.Context, id string) error {
-	// Will be implemented in Step 2
-	return nil
+	return r.db.WithContext(ctx).
+		Model(&models.Notification{}).
+		Where("id = ?", id).
+		UpdateColumn("retry_count", gorm.Expr("retry_count + 1")).
+		Error
 }
