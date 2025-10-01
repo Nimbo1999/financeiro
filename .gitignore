@@ -1,5 +1,11 @@
 plans/
 
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
 # Ignore GO binary files.
 */app-server
 
@@ -8,3 +14,9 @@ plans/
 
 # Ignore PEM files
 **/*.pem
+
+# OS
+.DS_Store
+
+# Environment
+.env
