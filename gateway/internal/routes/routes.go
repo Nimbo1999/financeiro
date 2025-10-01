@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -69,6 +70,26 @@ func (r *Router) setupMiddleware() {
 	r.mux.Use(middleware.RealIP)
 	r.mux.Use(middleware.Logger)
 	r.mux.Use(middleware.Recoverer)
+
+	// CORS middleware
+	if r.config.Security.EnableCORS {
+		cors := authmw.NewCORSMiddleware(authmw.DefaultCORSConfig())
+		r.mux.Use(cors.Handler)
+	}
+
+	// Timeout middleware
+	r.mux.Use(
+		middleware.Timeout(time.Duration(r.config.Server.RequestTimeout) * time.Second),
+	)
+
+	// Circuit breaker middleware (for downstream services)
+	if r.config.CircuitBreaker.Enabled {
+		cbConfig := authmw.DefaultCircuitBreakerConfig()
+		cbConfig.MaxFailures = r.config.CircuitBreaker.MaxFailures
+		cbConfig.ResetTimeout = time.Duration(r.config.CircuitBreaker.ResetTimeout) * time.Second
+		circuitBreaker := authmw.NewCircuitBreaker(cbConfig)
+		r.mux.Use(circuitBreaker.Handler)
+	}
 
 	// Authentication middleware (applies to all routes, but checks for public paths)
 	r.mux.Use(r.authMiddleware.Handler)

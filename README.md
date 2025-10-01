@@ -35,3 +35,7 @@ migrate create -seq -dir migrations -ext sql [NAME]
    authentication/internal/messaging/\*.go and move to a module where the applications can
    reuse the client without having to implement the logic internally.
 3. Review the gRPC transport credentials, how would I grant TLS support for the communications?
+4. Refactor the Circuit Breaker pattern of each service. The goal is to create a Circuit Breaker
+   module and make it available to all the services that would like to install it. This way I can
+   have the benefit of a centralized implementation that would provide the same behavior and develop
+   experience across the different services of my solution.
