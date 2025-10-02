@@ -1,8 +1,11 @@
 package services
 
 import (
+	"context"
 	"errors"
+	"log"
 
+	"github.com/nimbo1999/financeiro/users/internal/messaging"
 	"github.com/nimbo1999/financeiro/users/internal/models"
 	"github.com/nimbo1999/financeiro/users/internal/repositories"
 )
@@ -38,12 +41,14 @@ type UserService interface {
 }
 
 type userService struct {
-	userRepo repositories.UserRepository
+	userRepo  repositories.UserRepository
+	publisher messaging.Publisher
 }
 
-func NewUserService(userRepo repositories.UserRepository) UserService {
+func NewUserService(userRepo repositories.UserRepository, publisher messaging.Publisher) UserService {
 	return &userService{
-		userRepo: userRepo,
+		userRepo:  userRepo,
+		publisher: publisher,
 	}
 }
 
@@ -60,6 +65,16 @@ func (s *userService) CreateUser(req *CreateUserRequest) (*models.User, error) {
 	err := s.userRepo.Create(user)
 	if err != nil {
 		return nil, err
+	}
+
+	// Publish user.created event asynchronously
+	if s.publisher != nil {
+		go func() {
+			event := messaging.NewUserCreatedEvent(user.ID, user.Email, user.FullName)
+			if err := s.publisher.PublishEvent(context.Background(), event); err != nil {
+				log.Printf("Failed to publish user.created event: %v", err)
+			}
+		}()
 	}
 
 	return user, nil

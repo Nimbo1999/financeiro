@@ -3,12 +3,16 @@ package app
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nimbo1999/financeiro/users/internal/handler"
+	"github.com/nimbo1999/financeiro/users/internal/messaging"
 	"github.com/nimbo1999/financeiro/users/internal/repositories"
 	"github.com/nimbo1999/financeiro/users/internal/services"
 	"google.golang.org/grpc"
@@ -19,13 +23,27 @@ type App struct {
 	db         *gorm.DB
 	httpServer *http.Server
 	grpcServer *grpc.Server
+	publisher  messaging.Publisher
 	wg         *sync.WaitGroup
 }
 
 func New(db *gorm.DB) *App {
+	// Initialize RabbitMQ publisher
+	rabbitmqURL := os.Getenv("RABBITMQ_URL")
+	if rabbitmqURL == "" {
+		rabbitmqURL = "amqp://guest:guest@localhost:5672/"
+	}
+
+	publisher, err := messaging.NewPublisher(rabbitmqURL, "notification.exchange")
+	if err != nil {
+		log.Printf("Warning: Failed to initialize RabbitMQ publisher: %v", err)
+		log.Println("User service will run without event publishing")
+	}
+
 	return &App{
-		db: db,
-		wg: &sync.WaitGroup{},
+		db:        db,
+		publisher: publisher,
+		wg:        &sync.WaitGroup{},
 	}
 }
 
@@ -43,10 +61,11 @@ func (a *App) RunHTTP(port string) error {
 	}
 
 	userRepository := repositories.NewUserRepository(a.db)
-	userService := services.NewUserService(userRepository)
+	userService := services.NewUserService(userRepository, a.publisher)
 	userHandler := handler.NewUserHandler(userService)
 
 	mux := chi.NewMux()
+	mux.Use(middleware.Logger)
 	mux.Use(a.requestTrackingMiddleware)
 	mux.Use(cors)
 	mux.Route("/", userHandler.RegisterRoutes)

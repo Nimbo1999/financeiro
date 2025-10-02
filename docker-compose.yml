@@ -23,6 +23,18 @@ services:
       - "25432:5432"
     volumes:
       - authentication_postgres_data:/var/lib/postgresql/data
+
+  notification-postgres:
+    image: postgres:15
+    container_name: notification_postgres_db
+    environment:
+      POSTGRES_USER: matheus
+      POSTGRES_PASSWORD: dev1234 # Using a fake password for development, but in production use a strong password!
+      POSTGRES_DB: financeiro_notification
+    ports:
+      - "35432:5432"
+    volumes:
+      - notification_postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
   pgadmin:

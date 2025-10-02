@@ -49,7 +49,7 @@ func (a *App) RunGRPC(port string) error {
 
 	// Create service dependencies
 	userRepository := repositories.NewUserRepository(a.db)
-	userService := services.NewUserService(userRepository)
+	userService := services.NewUserService(userRepository, a.publisher)
 	userGRPCHandler := handler.NewUserGRPCHandler(userService)
 
 	// Register services
@@ -114,6 +114,14 @@ func (a *App) Shutdown(ctx context.Context) error {
 		case err := <-grpcErrChan:
 			grpcErr = err
 		}
+	}
+
+	// Close RabbitMQ publisher
+	if a.publisher != nil {
+		if err := a.publisher.Close(); err != nil {
+			fmt.Printf("Publisher close error: %v\n", err)
+		}
+		fmt.Println("RabbitMQ publisher closed")
 	}
 
 	// Close database connections

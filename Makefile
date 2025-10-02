@@ -1,4 +1,4 @@
-PHONY: compose-up compose-down compose-logs psql-auth psql-user
+PHONY: compose-up compose-down compose-logs psql-auth psql-user psql-notification
 
 compose-up:
 	docker-compose up -d
@@ -14,3 +14,6 @@ psql-auth:
 
 psql-user:
 	docker exec -it user_postgres_db psql -U matheus -d financeiro_user
+
+psql-notification:
+	docker exec -it notification_postgres_db psql -U matheus -d financeiro_notification
