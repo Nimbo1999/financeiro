@@ -2,7 +2,11 @@ package services
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
 	"time"
+
+	"gopkg.in/gomail.v2"
 )
 
 type EmailService interface {
@@ -31,11 +35,36 @@ func NewEmailService(smtpHost string, smtpPort int, smtpUsername, smtpPassword, 
 }
 
 func (s *emailService) SendWelcomeEmail(ctx context.Context, to, name string) error {
-	// Will be implemented in later steps
-	return nil
+	body, err := s.templateSvc.RenderWelcomeEmail(name)
+	if err != nil {
+		return fmt.Errorf("failed to render welcome email: %w", err)
+	}
+
+	return s.sendEmail(to, "Welcome to Financeiro!", body)
 }
 
 func (s *emailService) SendOTPEmail(ctx context.Context, to, code string, expiresAt time.Time) error {
-	// Will be implemented in later steps
+	body, err := s.templateSvc.RenderOTPEmail(code, expiresAt)
+	if err != nil {
+		return fmt.Errorf("failed to render OTP email: %w", err)
+	}
+
+	return s.sendEmail(to, "Financeiro Login Code", body)
+}
+
+func (s *emailService) sendEmail(to, subject, htmlBody string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", s.smtpFrom)
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", htmlBody)
+
+	d := gomail.NewDialer(s.smtpHost, s.smtpPort, s.smtpUsername, s.smtpPassword)
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	if err := d.DialAndSend(m); err != nil {
+		return fmt.Errorf("failed to send email to %s: %w", to, err)
+	}
+
 	return nil
 }

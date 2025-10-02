@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -29,7 +30,7 @@ type Config struct {
 	TemplateDir string
 }
 
-func Load() *Config {
+func LoadFromEnvironment() *Config {
 	return &Config{
 		HTTPPort:                 getEnv("HTTP_PORT", "8080"),
 		PostgresConnectionString: getEnv("POSTGRES_CONNECTION_STRING", "postgres://localhost:35432"),
@@ -44,7 +45,7 @@ func Load() *Config {
 		SMTPPort:     getEnvAsInt("SMTP_PORT", 587),
 		SMTPUsername: getEnv("SMTP_USERNAME", ""),
 		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
-		SMTPFrom:     getEnv("SMTP_FROM", "noreply@localhost.com"),
+		SMTPFrom:     getEnv("SMTP_FROM", "noreply@example.com"),
 		SMTPTimeout:  getEnvAsDuration("SMTP_TIMEOUT", 10*time.Second),
 
 		TemplateDir: getEnv("TEMPLATE_DIR", "./internal/templates"),
@@ -59,17 +60,31 @@ func getEnv(key, defaultValue string) string {
 }
 
 func getEnvAsInt(key string, defaultValue int) int {
-	valueStr := getEnv(key, "")
-	if value, err := strconv.Atoi(valueStr); err == nil {
-		return value
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue
 	}
-	return defaultValue
+
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		fmt.Printf("Warning: Invalid integer value for %s, using default: %d\n", key, defaultValue)
+		return defaultValue
+	}
+
+	return value
 }
 
 func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
-	valueStr := getEnv(key, "")
-	if value, err := time.ParseDuration(valueStr); err == nil {
-		return value
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue
 	}
-	return defaultValue
+
+	value, err := time.ParseDuration(valueStr)
+	if err != nil {
+		fmt.Printf("Warning: Invalid duration value for %s, using default: %s\n", key, defaultValue)
+		return defaultValue
+	}
+
+	return value
 }

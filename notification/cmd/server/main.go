@@ -21,7 +21,7 @@ import (
 
 func main() {
 	// 1. Load config
-	cfg := config.Load()
+	cfg := config.LoadFromEnvironment()
 
 	// 2. Connect to database
 	db, err := connectDB(cfg.PostgresConnectionString)
