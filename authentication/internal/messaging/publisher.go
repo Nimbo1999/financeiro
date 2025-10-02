@@ -50,7 +50,7 @@ func NewPublisher(connection RabbitMQConnection, queueManager QueueManager, conf
 		config.PublishTimeout = 30 * time.Second
 	}
 	if config.ExchangeName == "" {
-		config.ExchangeName = "authentication.exchange"
+		config.ExchangeName = "notification.exchange"
 	}
 
 	p := &publisher{
@@ -242,7 +242,7 @@ func (p *publisher) IsHealthy() bool {
 // DefaultPublisherConfig returns a default publisher configuration
 func DefaultPublisherConfig() PublisherConfig {
 	return PublisherConfig{
-		ExchangeName:   "authentication.exchange",
+		ExchangeName:   "notification.exchange",
 		Mandatory:      false,
 		Immediate:      false,
 		RetryDelay:     1 * time.Second,

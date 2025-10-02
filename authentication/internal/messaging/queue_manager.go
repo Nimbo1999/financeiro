@@ -155,7 +155,7 @@ func (q *queueManager) BindQueues() error {
 func getDefaultExchanges() []ExchangeConfig {
 	return []ExchangeConfig{
 		{
-			Name:       "authentication.exchange",
+			Name:       "notification.exchange",
 			Type:       "topic",
 			Durable:    true,
 			AutoDelete: false,
@@ -169,17 +169,18 @@ func getDefaultExchanges() []ExchangeConfig {
 func getDefaultQueues() []QueueConfig {
 	return []QueueConfig{
 		{
-			Name:       "authentication.codes",
+			Name:       "notification.otp",
 			Durable:    true,
 			AutoDelete: false,
 			Exclusive:  false,
 			NoWait:     false,
 			Args: amqp.Table{
-				"x-message-ttl": int32(900000), // 15 minutes TTL for auth code messages
+				"x-dead-letter-exchange":    "notification.exchange",
+				"x-dead-letter-routing-key": "notification.failed",
 			},
 		},
 		{
-			Name:       "authentication.codes.dlq",
+			Name:       "notification.dlq",
 			Durable:    true,
 			AutoDelete: false,
 			Exclusive:  false,
@@ -192,16 +193,16 @@ func getDefaultQueues() []QueueConfig {
 func getDefaultBindings() []BindingConfig {
 	return []BindingConfig{
 		{
-			QueueName:    "authentication.codes",
-			ExchangeName: "authentication.exchange",
+			QueueName:    "notification.otp",
+			ExchangeName: "notification.exchange",
 			RoutingKey:   "auth.code.requested",
 			NoWait:       false,
 			Args:         nil,
 		},
 		{
-			QueueName:    "authentication.codes.dlq",
-			ExchangeName: "authentication.exchange",
-			RoutingKey:   "auth.code.failed",
+			QueueName:    "notification.dlq",
+			ExchangeName: "notification.exchange",
+			RoutingKey:   "notification.failed",
 			NoWait:       false,
 			Args:         nil,
 		},
