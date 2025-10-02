@@ -11,6 +11,7 @@ type WelcomeEmailEvent struct {
 }
 
 type WelcomeEmailData struct {
+	UserID    string `json:"user_id"`
 	UserEmail string `json:"user_email"`
 	Name      string `json:"name"`
 }
@@ -26,6 +27,7 @@ type OTPEmailEvent struct {
 }
 
 type OTPEmailData struct {
+	UserID    string    `json:"user_id"`
 	UserEmail string    `json:"user_email"`
 	AuthCode  string    `json:"auth_code"`
 	CodeID    string    `json:"code_id"`

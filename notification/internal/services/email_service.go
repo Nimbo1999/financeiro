@@ -60,7 +60,13 @@ func (s *emailService) sendEmail(to, subject, htmlBody string) error {
 	m.SetBody("text/html", htmlBody)
 
 	d := gomail.NewDialer(s.smtpHost, s.smtpPort, s.smtpUsername, s.smtpPassword)
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	d.SSL = true
+	// Enforce TLS 1.2 or higher
+	d.TLSConfig = &tls.Config{
+		ServerName:         s.smtpHost,
+		MinVersion:         tls.VersionTLS12,
+		InsecureSkipVerify: false,
+	}
 
 	if err := d.DialAndSend(m); err != nil {
 		return fmt.Errorf("failed to send email to %s: %w", to, err)

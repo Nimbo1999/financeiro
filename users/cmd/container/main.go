@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,6 +11,7 @@ import (
 	_ "github.com/jackc/pgx/v5"
 	"github.com/nimbo1999/financeiro/users/internal/app"
 	"github.com/nimbo1999/financeiro/users/internal/config"
+	"github.com/nimbo1999/financeiro/users/internal/messaging"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -22,7 +24,13 @@ func main() {
 		panic("failed to connect database")
 	}
 
-	app := app.New(db)
+	publisher, err := messaging.NewPublisher(config.RabbitMQURL, "notification.exchange")
+	if err != nil {
+		log.Printf("Warning: Failed to initialize RabbitMQ publisher: %v", err)
+		log.Println("User service will run without event publishing")
+	}
+
+	app := app.New(db, publisher)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)

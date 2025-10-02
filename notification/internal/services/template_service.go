@@ -42,7 +42,7 @@ func (s *templateService) RenderWelcomeEmail(name string) (string, error) {
 func (s *templateService) RenderOTPEmail(code string, expiresAt time.Time) (string, error) {
 	data := OTPEmailData{
 		Code:      code,
-		ExpiresAt: expiresAt.Format("2006-01-02 15:04:05"),
+		ExpiresAt: expiresAt.Format("02/01/2006 15:04:05"),
 	}
 	return s.loadTemplate("otp.html", data)
 }

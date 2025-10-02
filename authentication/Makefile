@@ -12,7 +12,7 @@ PHONY: migrate-up run build unit-test g-cert-files
 migrate-up:
 	migrate -source file://migrations -database pgx://$(POSTGRES_CONNECTION_STRING) up
 
-run:
+run: g-cert-files migrate-up
 	HTTP_PORT=$(HTTP_PORT) \
 	GRPC_PORT=$(GRPC_PORT) \
 	RABBITMQ_URL=$(RABBITMQ_URL) \

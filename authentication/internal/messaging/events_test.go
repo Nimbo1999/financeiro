@@ -18,12 +18,13 @@ func TestEventsTestSuite(t *testing.T) {
 }
 
 func (suite *EventsTestSuite) TestNewAuthCodeRequestedEvent() {
+	userID := "user-123"
 	userEmail := "test@example.com"
 	authCode := "123456"
 	codeID := "code-123"
 	expiresAt := time.Now().Add(5 * time.Minute)
 
-	event := NewAuthCodeRequestedEvent(userEmail, authCode, codeID, expiresAt)
+	event := NewAuthCodeRequestedEvent(userID, userEmail, authCode, codeID, expiresAt)
 
 	assert.NotNil(suite.T(), event)
 	assert.Equal(suite.T(), EventTypeAuthCodeRequested, event.Type)
@@ -32,6 +33,7 @@ func (suite *EventsTestSuite) TestNewAuthCodeRequestedEvent() {
 	assert.NotEmpty(suite.T(), event.ID)
 	assert.WithinDuration(suite.T(), time.Now(), event.Timestamp, time.Second)
 
+	assert.Equal(suite.T(), userID, event.Data.UserID)
 	assert.Equal(suite.T(), userEmail, event.Data.UserEmail)
 	assert.Equal(suite.T(), authCode, event.Data.AuthCode)
 	assert.Equal(suite.T(), codeID, event.Data.CodeID)
@@ -91,7 +93,7 @@ func (suite *EventsTestSuite) TestNewAuthCodeFailedEvent() {
 }
 
 func (suite *EventsTestSuite) TestAuthCodeRequestedEvent_EventInterface() {
-	event := NewAuthCodeRequestedEvent("test@example.com", "123456", "code-123", time.Now())
+	event := NewAuthCodeRequestedEvent("user-123", "test@example.com", "123456", "code-123", time.Now())
 
 	assert.Equal(suite.T(), EventTypeAuthCodeRequested, event.GetType())
 	assert.NotEmpty(suite.T(), event.GetID())
@@ -183,7 +185,7 @@ func TestEventSerialization(t *testing.T) {
 	}{
 		{
 			"AuthCodeRequestedEvent",
-			NewAuthCodeRequestedEvent("test@example.com", "123456", "code-123", time.Now()),
+			NewAuthCodeRequestedEvent("user-123", "test@example.com", "123456", "code-123", time.Now()),
 		},
 		{
 			"AuthCodeVerifiedEvent",

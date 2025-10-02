@@ -180,7 +180,7 @@ func (s *authService) RequestAuthCode(ctx context.Context, email string) (*AuthC
 	s.updateRateLimit(email)
 
 	// Publish auth code requested event
-	go s.publishAuthCodeRequestedEvent(context.Background(), email, code, authCode.ID, authCode.ExpiresAt)
+	go s.publishAuthCodeRequestedEvent(context.Background(), user.Id, email, code, authCode.ID, authCode.ExpiresAt)
 
 	return &AuthCodeResult{
 		CodeID:    authCode.ID,
@@ -346,8 +346,8 @@ func (s *authService) updateRateLimit(email string) {
 }
 
 // Helper methods for event publishing
-func (s *authService) publishAuthCodeRequestedEvent(ctx context.Context, email, code, codeID string, expiresAt time.Time) {
-	event := messaging.NewAuthCodeRequestedEvent(email, code, codeID, expiresAt)
+func (s *authService) publishAuthCodeRequestedEvent(ctx context.Context, userID, email, code, codeID string, expiresAt time.Time) {
+	event := messaging.NewAuthCodeRequestedEvent(userID, email, code, codeID, expiresAt)
 
 	pubCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

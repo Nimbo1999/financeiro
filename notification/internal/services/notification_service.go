@@ -38,8 +38,7 @@ func (s *notificationService) SendWelcomeEmail(ctx context.Context, event *model
 
 	// 2. Create notification record (status: pending)
 	notification := &models.Notification{
-		ID:                  uuid.New().String(),
-		UserID:              event.ID, // Using event ID as user ID for now
+		UserID:              event.Data.UserID,
 		Email:               event.Data.UserEmail,
 		NotificationSubject: "notification.welcome",
 		NotificationType:    event.Type,
@@ -83,7 +82,7 @@ func (s *notificationService) SendOTPEmail(ctx context.Context, event *models.OT
 	// 2. Create notification record (status: pending)
 	notification := &models.Notification{
 		ID:                  uuid.New().String(),
-		UserID:              event.Data.CodeID, // Using code ID as user ID for now
+		UserID:              event.Data.UserID,
 		Email:               event.Data.UserEmail,
 		NotificationSubject: "notification.otp",
 		NotificationType:    event.Type,

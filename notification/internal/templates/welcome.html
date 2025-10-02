@@ -1,12 +1,128 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Welcome</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Finance Tracker</title>
+    <!--[if mso]>
+    <style type="text/css">
+        body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
+    </style>
+    <![endif]-->
 </head>
-<body>
-    <h1>Welcome {{.Name}}!</h1>
-    <p>Thank you for joining our finance tracking platform.</p>
-    <p>Get started by uploading your first transaction CSV.</p>
+<body style="margin: 0; padding: 0; background-color: #f4f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f7fa;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <!-- Main Container -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
+
+                    <!-- Header with Gradient Background -->
+                    <tr>
+                        <td style="padding: 0; position: relative; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 280px;">
+
+                            <!-- Header Content -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="position: relative; z-index: 1;">
+                                <tr>
+                                    <td style="padding: 50px 40px; text-align: center;">
+                                        <!-- Icon/Logo -->
+                                        <div style="margin-bottom: 20px;">
+                                            <div style="display: inline-block; width: 80px; height: 80px; background-color: rgba(255,255,255,0.95); border-radius: 20px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+                                                <span style="font-size: 64px; line-height: 1; margin-left: -8px;">👋</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Welcome Title -->
+                                        <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #ffffff; line-height: 1.3; text-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                            Welcome, {{.Name}}!
+                                        </h1>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding: 50px 40px;">
+                            <!-- Greeting -->
+                            <p style="margin: 0 0 24px 0; font-size: 18px; color: #1f2937; line-height: 1.6; font-weight: 500;">
+                                Hi {{.Name}},
+                            </p>
+
+                            <!-- Main Text -->
+                            <p style="margin: 0 0 20px 0; font-size: 16px; color: #4b5563; line-height: 1.7;">
+                                Thank you for joining our finance tracking platform! We're excited to help you take control of your financial journey.
+                            </p>
+
+                            <p style="margin: 0 0 32px 0; font-size: 16px; color: #4b5563; line-height: 1.7;">
+                                Get started by uploading your first transaction CSV and watch as we transform your data into actionable insights.
+                            </p>
+
+                            <!-- CTA Button -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                                <tr>
+                                    <td style="border-radius: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); text-align: center;">
+                                        <a href="#" style="display: inline-block; padding: 16px 40px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 10px;">
+                                            Upload Your First CSV
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Feature Cards -->
+                    <tr>
+                        <td style="padding: 0 40px 40px 40px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                <tr>
+                                    <td style="padding: 24px; background-color: #f9fafb; border-radius: 12px; border-left: 4px solid #667eea;">
+                                        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1f2937;">
+                                            📊 Smart Analytics
+                                        </h3>
+                                        <p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
+                                            Visualize spending patterns and discover insights about your finances.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr><td style="height: 16px;"></td></tr>
+                                <tr>
+                                    <td style="padding: 24px; background-color: #f9fafb; border-radius: 12px; border-left: 4px solid #764ba2;">
+                                        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1f2937;">
+                                            🔒 Secure & Private
+                                        </h3>
+                                        <p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
+                                            Your financial data is encrypted and never shared with third parties.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center;">
+                            <p style="margin: 0 0 12px 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
+                                Need help getting started? We're here for you!
+                            </p>
+                            <p style="margin: 0 0 20px 0;">
+                                <a href="#" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 500;">Visit Help Center</a>
+                                <span style="color: #d1d5db; margin: 0 8px;">|</span>
+                                <a href="#" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 500;">Contact Support</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">
+                                © 2025 Finance Tracker. All rights reserved.<br>
+                                <a href="#" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a> |
+                                <a href="#" style="color: #9ca3af; text-decoration: underline;">Privacy Policy</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

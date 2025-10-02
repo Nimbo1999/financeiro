@@ -22,7 +22,11 @@ type publisher struct {
 
 // NewPublisher creates a new RabbitMQ publisher
 func NewPublisher(rabbitmqURL, exchangeName string) (Publisher, error) {
-	conn, err := amqp.Dial(rabbitmqURL)
+	conn, err := amqp.DialConfig(rabbitmqURL, amqp.Config{
+		Properties: amqp.Table{
+			"connection_name": "user_service",
+		},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}

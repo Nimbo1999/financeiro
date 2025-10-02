@@ -67,3 +67,4 @@ volumes:
   user_postgres_data:
   authentication_postgres_data:
   rabbitmq_data:
+  notification_postgres_data:

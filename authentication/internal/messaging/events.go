@@ -31,6 +31,7 @@ type AuthCodeRequestedEvent struct {
 }
 
 type AuthCodeRequestedData struct {
+	UserID    string    `json:"user_id"`
 	UserEmail string    `json:"user_email"`
 	AuthCode  string    `json:"auth_code"`
 	CodeID    string    `json:"code_id"`
@@ -44,12 +45,12 @@ type AuthCodeVerifiedEvent struct {
 }
 
 type AuthCodeVerifiedData struct {
-	UserEmail       string    `json:"user_email"`
-	UserID          string    `json:"user_id"`
-	CodeID          string    `json:"code_id"`
-	VerifiedAt      time.Time `json:"verified_at"`
-	IsNewUser       bool      `json:"is_new_user"`
-	AuthenticationMethod string `json:"authentication_method"`
+	UserEmail            string    `json:"user_email"`
+	UserID               string    `json:"user_id"`
+	CodeID               string    `json:"code_id"`
+	VerifiedAt           time.Time `json:"verified_at"`
+	IsNewUser            bool      `json:"is_new_user"`
+	AuthenticationMethod string    `json:"authentication_method"`
 }
 
 // AuthCodeExpiredEvent is published when an authentication code expires
@@ -88,7 +89,7 @@ type Event interface {
 }
 
 // NewAuthCodeRequestedEvent creates a new auth code requested event
-func NewAuthCodeRequestedEvent(userEmail, authCode, codeID string, expiresAt time.Time) *AuthCodeRequestedEvent {
+func NewAuthCodeRequestedEvent(userID, userEmail, authCode, codeID string, expiresAt time.Time) *AuthCodeRequestedEvent {
 	return &AuthCodeRequestedEvent{
 		BaseEvent: BaseEvent{
 			ID:        generateEventID(),
@@ -98,6 +99,7 @@ func NewAuthCodeRequestedEvent(userEmail, authCode, codeID string, expiresAt tim
 			Version:   "1.0",
 		},
 		Data: AuthCodeRequestedData{
+			UserID:    userID,
 			UserEmail: userEmail,
 			AuthCode:  authCode,
 			CodeID:    codeID,
@@ -166,40 +168,40 @@ func NewAuthCodeFailedEvent(userEmail, codeID, reason string, attemptsCount int)
 }
 
 // Implement Event interface for AuthCodeRequestedEvent
-func (e *AuthCodeRequestedEvent) GetType() EventType { return e.Type }
-func (e *AuthCodeRequestedEvent) GetID() string     { return e.ID }
+func (e *AuthCodeRequestedEvent) GetType() EventType      { return e.Type }
+func (e *AuthCodeRequestedEvent) GetID() string           { return e.ID }
 func (e *AuthCodeRequestedEvent) GetTimestamp() time.Time { return e.Timestamp }
-func (e *AuthCodeRequestedEvent) GetRoutingKey() string { return string(e.Type) }
+func (e *AuthCodeRequestedEvent) GetRoutingKey() string   { return string(e.Type) }
 
 func (e *AuthCodeRequestedEvent) ToJSON() ([]byte, error) {
 	return json.Marshal(e)
 }
 
 // Implement Event interface for AuthCodeVerifiedEvent
-func (e *AuthCodeVerifiedEvent) GetType() EventType { return e.Type }
-func (e *AuthCodeVerifiedEvent) GetID() string     { return e.ID }
+func (e *AuthCodeVerifiedEvent) GetType() EventType      { return e.Type }
+func (e *AuthCodeVerifiedEvent) GetID() string           { return e.ID }
 func (e *AuthCodeVerifiedEvent) GetTimestamp() time.Time { return e.Timestamp }
-func (e *AuthCodeVerifiedEvent) GetRoutingKey() string { return string(e.Type) }
+func (e *AuthCodeVerifiedEvent) GetRoutingKey() string   { return string(e.Type) }
 
 func (e *AuthCodeVerifiedEvent) ToJSON() ([]byte, error) {
 	return json.Marshal(e)
 }
 
 // Implement Event interface for AuthCodeExpiredEvent
-func (e *AuthCodeExpiredEvent) GetType() EventType { return e.Type }
-func (e *AuthCodeExpiredEvent) GetID() string     { return e.ID }
+func (e *AuthCodeExpiredEvent) GetType() EventType      { return e.Type }
+func (e *AuthCodeExpiredEvent) GetID() string           { return e.ID }
 func (e *AuthCodeExpiredEvent) GetTimestamp() time.Time { return e.Timestamp }
-func (e *AuthCodeExpiredEvent) GetRoutingKey() string { return string(e.Type) }
+func (e *AuthCodeExpiredEvent) GetRoutingKey() string   { return string(e.Type) }
 
 func (e *AuthCodeExpiredEvent) ToJSON() ([]byte, error) {
 	return json.Marshal(e)
 }
 
 // Implement Event interface for AuthCodeFailedEvent
-func (e *AuthCodeFailedEvent) GetType() EventType { return e.Type }
-func (e *AuthCodeFailedEvent) GetID() string     { return e.ID }
+func (e *AuthCodeFailedEvent) GetType() EventType      { return e.Type }
+func (e *AuthCodeFailedEvent) GetID() string           { return e.ID }
 func (e *AuthCodeFailedEvent) GetTimestamp() time.Time { return e.Timestamp }
-func (e *AuthCodeFailedEvent) GetRoutingKey() string { return string(e.Type) }
+func (e *AuthCodeFailedEvent) GetRoutingKey() string   { return string(e.Type) }
 
 func (e *AuthCodeFailedEvent) ToJSON() ([]byte, error) {
 	return json.Marshal(e)

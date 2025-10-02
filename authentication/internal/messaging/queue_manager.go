@@ -2,7 +2,6 @@ package messaging
 
 import (
 	"fmt"
-	"log"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -69,8 +68,6 @@ func (q *queueManager) SetupTopology() error {
 	if err := q.BindQueues(); err != nil {
 		return fmt.Errorf("failed to bind queues: %w", err)
 	}
-
-	log.Println("RabbitMQ topology setup completed successfully")
 	return nil
 }
 
@@ -94,7 +91,6 @@ func (q *queueManager) DeclareExchanges() error {
 		if err != nil {
 			return fmt.Errorf("failed to declare exchange %s: %w", exchange.Name, err)
 		}
-		log.Printf("Declared exchange: %s (type: %s)", exchange.Name, exchange.Type)
 	}
 
 	return nil
@@ -119,7 +115,6 @@ func (q *queueManager) DeclareQueues() error {
 		if err != nil {
 			return fmt.Errorf("failed to declare queue %s: %w", queue.Name, err)
 		}
-		log.Printf("Declared queue: %s", queue.Name)
 	}
 
 	return nil
@@ -144,8 +139,6 @@ func (q *queueManager) BindQueues() error {
 			return fmt.Errorf("failed to bind queue %s to exchange %s: %w",
 				binding.QueueName, binding.ExchangeName, err)
 		}
-		log.Printf("Bound queue %s to exchange %s with key %s",
-			binding.QueueName, binding.ExchangeName, binding.RoutingKey)
 	}
 
 	return nil

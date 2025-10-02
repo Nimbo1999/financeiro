@@ -18,12 +18,12 @@ type Consumer interface {
 }
 
 type RabbitMQConsumer struct {
-	conn              *amqp.Connection
-	channel           *amqp.Channel
-	welcomeQueue      string
-	otpQueue          string
-	notificationSvc   services.NotificationService
-	prefetchCount     int
+	conn            *amqp.Connection
+	channel         *amqp.Channel
+	welcomeQueue    string
+	otpQueue        string
+	notificationSvc services.NotificationService
+	prefetchCount   int
 }
 
 func NewRabbitMQConsumer(
@@ -33,7 +33,11 @@ func NewRabbitMQConsumer(
 	prefetchCount int,
 	notificationSvc services.NotificationService,
 ) (Consumer, error) {
-	conn, err := amqp.Dial(rabbitmqURL)
+	conn, err := amqp.DialConfig(rabbitmqURL, amqp.Config{
+		Properties: amqp.Table{
+			"connection_name": "notification_service",
+		},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}

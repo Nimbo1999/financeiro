@@ -3,6 +3,8 @@ package messaging
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const userCreatedEventType = "user.created"
@@ -16,6 +18,7 @@ type UserCreatedEvent struct {
 }
 
 type UserCreatedData struct {
+	UserID    string `json:"user_id"`
 	UserEmail string `json:"user_email"`
 	Name      string `json:"name"`
 }
@@ -33,10 +36,11 @@ func (e *UserCreatedEvent) GetRoutingKey() string {
 // NewUserCreatedEvent creates a new user created event
 func NewUserCreatedEvent(userID, email, name string) *UserCreatedEvent {
 	return &UserCreatedEvent{
-		ID:        userID,
+		ID:        uuid.NewString(),
 		Type:      userCreatedEventType,
 		Timestamp: time.Now().UTC(),
 		Data: UserCreatedData{
+			UserID:    userID,
 			UserEmail: email,
 			Name:      name,
 		},

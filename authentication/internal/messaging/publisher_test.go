@@ -268,7 +268,7 @@ func TestPublisherConfig_DefaultValues(t *testing.T) {
 		expectedConfig PublisherConfig
 	}{
 		{
-			name: "empty config gets defaults",
+			name:   "empty config gets defaults",
 			config: PublisherConfig{},
 			expectedConfig: PublisherConfig{
 				ExchangeName:   "authentication.exchange",
@@ -311,6 +311,7 @@ func TestEventPublishingScenarios(t *testing.T) {
 		{
 			name: "auth code requested event",
 			event: NewAuthCodeRequestedEvent(
+				"user-123",
 				"test@example.com",
 				"123456",
 				"code-123",

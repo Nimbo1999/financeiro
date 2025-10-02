@@ -3,9 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -27,19 +25,7 @@ type App struct {
 	wg         *sync.WaitGroup
 }
 
-func New(db *gorm.DB) *App {
-	// Initialize RabbitMQ publisher
-	rabbitmqURL := os.Getenv("RABBITMQ_URL")
-	if rabbitmqURL == "" {
-		rabbitmqURL = "amqp://guest:guest@localhost:5672/"
-	}
-
-	publisher, err := messaging.NewPublisher(rabbitmqURL, "notification.exchange")
-	if err != nil {
-		log.Printf("Warning: Failed to initialize RabbitMQ publisher: %v", err)
-		log.Println("User service will run without event publishing")
-	}
-
+func New(db *gorm.DB, publisher messaging.Publisher) *App {
 	return &App{
 		db:        db,
 		publisher: publisher,
