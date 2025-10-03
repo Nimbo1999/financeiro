@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	_ "github.com/jackc/pgx/v5"
+	migrator "github.com/nimbo1999/financeiro/migration-tool"
 	"github.com/nimbo1999/financeiro/users/internal/app"
 	"github.com/nimbo1999/financeiro/users/internal/config"
 	"github.com/nimbo1999/financeiro/users/internal/messaging"
@@ -16,15 +17,33 @@ import (
 	"gorm.io/gorm"
 )
 
-func main() {
-	config := config.LoadConfigFromEnvironment()
+var db *gorm.DB
+var cfg *config.Config
 
-	db, err := gorm.Open(postgres.Open(config.PostgresConnectionString), &gorm.Config{})
+func init() {
+	cfg = config.LoadConfigFromEnvironment()
+
+	var err error
+	db, err = gorm.Open(postgres.Open(cfg.PostgresConnectionString), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("failed to get database instance")
+	}
 
-	publisher, err := messaging.NewPublisher(config.RabbitMQURL, "notification.exchange")
+	if err = migrator.Migrate(sqlDB); err != nil {
+		if err == migrator.ErrNoChange {
+			return
+		}
+		panic(fmt.Sprintf("failed to run migrations: %v", err))
+	}
+	log.Println("Database migrated successfully!")
+}
+
+func main() {
+	publisher, err := messaging.NewPublisher(cfg.RabbitMQURL, "notification.exchange")
 	if err != nil {
 		log.Printf("Warning: Failed to initialize RabbitMQ publisher: %v", err)
 		log.Println("User service will run without event publishing")
@@ -38,14 +57,14 @@ func main() {
 	serverErrors := make(chan error, 2)
 
 	// Start HTTP server
-	go func(port string) {
-		serverErrors <- app.RunHTTP(port)
-	}(config.HttpPort)
+	go func() {
+		serverErrors <- app.RunHTTP(cfg.HttpPort)
+	}()
 
 	// Start gRPC server
-	go func(port string) {
-		serverErrors <- app.RunGRPC(port)
-	}(config.GrpcPort)
+	go func() {
+		serverErrors <- app.RunGRPC(cfg.GrpcPort)
+	}()
 
 	select {
 	case err := <-serverErrors:
