@@ -1,16 +1,16 @@
 BINARY_FILE_NAME=app-server
 DB_NAME=financeiro_notification
 DB_PORT=35432
-POSTGRES_CONNECTION_STRING=matheus:dev1234@localhost:$(DB_PORT)/$(DB_NAME)
+POSTGRES_CONNECTION_STRING=postgres://matheus:dev1234@localhost:$(DB_PORT)/$(DB_NAME)
 SMTP_USERNAME=${EMAIL}
 SMTP_PASSWORD=${EMAIL_PASSWORD}
 RABBITMQ_URL=amqp://admin:admin123@localhost:5672/ # Using weak password configured in docker for local development
 
-.PHONY: run build test migrate-up migrate-down unit-test
+.PHONY: run build test unit-test
 
-run: migrate-up
+run:
 	HTTP_PORT=8084 \
-	POSTGRES_CONNECTION_STRING=postgres://$(POSTGRES_CONNECTION_STRING) \
+	POSTGRES_CONNECTION_STRING=$(POSTGRES_CONNECTION_STRING) \
 	RABBITMQ_URL=$(RABBITMQ_URL) \
 	WELCOME_QUEUE_NAME=notification.welcome \
 	OTP_QUEUE_NAME=notification.otp \
@@ -27,12 +27,6 @@ run: migrate-up
 build:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go build -o $(BINARY_FILE_NAME) cmd/server/main.go
-
-migrate-up:
-	migrate -path migrations -database "pgx://$(POSTGRES_CONNECTION_STRING)" up
-
-migrate-down:
-	migrate -path migrations -database "pgx://$(POSTGRES_CONNECTION_STRING)" down
 
 unit-test:
 	go test ./... -v -cover -coverprofile=coverage.out

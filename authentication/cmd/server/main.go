@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,18 +11,37 @@ import (
 	_ "github.com/jackc/pgx/v5"
 	"github.com/nimbo1999/financeiro/authentication/internal/app"
 	"github.com/nimbo1999/financeiro/authentication/internal/config"
+	"github.com/nimbo1999/financeiro/migrator"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func main() {
-	configs := config.LoadConfigFromEnvironment()
+var db *gorm.DB
+var cfg *config.Config
 
-	db, err := gorm.Open(postgres.Open(configs.PostgresConnectionString), &gorm.Config{})
+func init() {
+	cfg = config.LoadConfigFromEnvironment()
+
+	var err error
+	db, err = gorm.Open(postgres.Open(cfg.PostgresConnectionString), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("failed to get database instance")
+	}
 
+	if err = migrator.Migrate(sqlDB); err != nil {
+		if err == migrator.ErrNoChange {
+			return
+		}
+		panic(fmt.Sprintf("failed to run migrations: %v", err))
+	}
+	log.Println("Database migrated successfully!")
+}
+
+func main() {
 	application := app.New(db)
 
 	// Initialize JWT service (shared between HTTP and gRPC servers)
@@ -37,12 +57,12 @@ func main() {
 
 	// Start HTTP server
 	go func() {
-		serverErrors <- application.RunHTTP(configs, jwtService)
+		serverErrors <- application.RunHTTP(cfg, jwtService)
 	}()
 
 	// Start gRPC server
 	go func() {
-		serverErrors <- application.RunGRPC(configs.GRPCPort, jwtService)
+		serverErrors <- application.RunGRPC(cfg.GRPCPort, jwtService)
 	}()
 
 	select {

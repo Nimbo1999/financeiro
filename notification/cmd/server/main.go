@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -15,20 +16,38 @@ import (
 	"notification/internal/repository"
 	"notification/internal/services"
 
+	"github.com/nimbo1999/financeiro/migrator"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func main() {
-	// 1. Load config
-	cfg := config.LoadFromEnvironment()
+var db *gorm.DB
+var cfg *config.Config
 
-	// 2. Connect to database
-	db, err := connectDB(cfg.PostgresConnectionString)
+func init() {
+	cfg = config.LoadFromEnvironment()
+
+	var err error
+	db, err = gorm.Open(postgres.Open(cfg.PostgresConnectionString), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		panic("failed to connect database")
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("failed to get database instance")
 	}
 
+	if err = migrator.Migrate(sqlDB); err != nil {
+		if err == migrator.ErrNoChange {
+			return
+		}
+		panic(fmt.Sprintf("failed to run migrations: %v", err))
+	}
+	log.Println("Database migrated successfully!")
+}
+
+func main() {
 	// 3. Initialize repositories
 	notificationRepo := repository.NewNotificationRepository(db)
 

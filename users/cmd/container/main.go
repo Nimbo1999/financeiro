@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	_ "github.com/jackc/pgx/v5"
-	migrator "github.com/nimbo1999/financeiro/migration-tool"
+	"github.com/nimbo1999/financeiro/migrator"
 	"github.com/nimbo1999/financeiro/users/internal/app"
 	"github.com/nimbo1999/financeiro/users/internal/config"
 	"github.com/nimbo1999/financeiro/users/internal/messaging"

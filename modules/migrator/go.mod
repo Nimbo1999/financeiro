@@ -1,4 +1,4 @@
-module github.com/nimbo1999/financeiro/migration-tool
+module github.com/nimbo1999/financeiro/migrator
 
 go 1.24
 
