@@ -4,7 +4,7 @@ COPY modules/migrator/ /modules/migrator/
 
 WORKDIR /app
 
-COPY users/ ./
+COPY notification/ ./
 
 RUN make build
 
@@ -15,6 +15,7 @@ FROM scratch
 WORKDIR /app
 
 COPY --from=builder /app/app-server .
-COPY users/migrations migrations/
+COPY notification/migrations migrations/
+COPY notification/internal/templates internal/templates/
 
 CMD [ "/app/app-server" ]

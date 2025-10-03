@@ -1,0 +1,18 @@
+@baseUrl=http://localhost:8080
+@AccessToken=your_access_token
+
+# Creates a new user
+###
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{AccessToken}}
+
+{
+  "email": "user@example.com",
+  "full_name": "User Name"
+}
+
+# List all users
+###
+GET {{baseUrl}}/users
+Authorization: Bearer {{AccessToken}}

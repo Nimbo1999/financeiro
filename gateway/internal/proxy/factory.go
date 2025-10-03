@@ -56,6 +56,10 @@ func (f *Factory) CreateHealthAggregator() *HealthAggregator {
 			Name: "users",
 			URL:  f.config.Services.UserServiceURL,
 		},
+		{
+			Name: "notifications",
+			URL:  f.config.Services.NotificationServiceURL,
+		},
 	}
 	serviceRegistry := NewInMemoryServiceRegistry(services)
 

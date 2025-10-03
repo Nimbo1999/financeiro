@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"notification/internal/models"
-	"notification/internal/repository"
+	"github.com/nimbo1999/financeiro/notification/internal/models"
+	"github.com/nimbo1999/financeiro/notification/internal/repository"
 
 	"github.com/google/uuid"
 )

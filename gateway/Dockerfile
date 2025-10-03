@@ -1,10 +1,10 @@
 FROM golang:1.24-trixie as builder
 
-COPY modules/migrator/ /modules/migrator/
+COPY authentication/ /authentication
 
 WORKDIR /app
 
-COPY users/ ./
+COPY gateway/ ./
 
 RUN make build
 
@@ -15,6 +15,5 @@ FROM scratch
 WORKDIR /app
 
 COPY --from=builder /app/app-server .
-COPY users/migrations migrations/
 
 CMD [ "/app/app-server" ]

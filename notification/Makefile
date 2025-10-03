@@ -12,16 +12,10 @@ run:
 	HTTP_PORT=8084 \
 	POSTGRES_CONNECTION_STRING=$(POSTGRES_CONNECTION_STRING) \
 	RABBITMQ_URL=$(RABBITMQ_URL) \
-	WELCOME_QUEUE_NAME=notification.welcome \
-	OTP_QUEUE_NAME=notification.otp \
-	DLQ_NAME=notification.dlq \
-	CONSUMER_PREFETCH_COUNT=10 \
-	SMTP_HOST=smtp.gmail.com \
 	SMTP_USERNAME=$(SMTP_USERNAME) \
 	SMTP_PASSWORD=$(SMTP_PASSWORD) \
 	SMTP_PORT=465 \
 	SMTP_FROM=$(SMTP_USERNAME) \
-	TEMPLATE_DIR=./internal/templates \
 	go run cmd/server/main.go
 
 build:

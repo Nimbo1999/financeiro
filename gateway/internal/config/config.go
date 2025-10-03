@@ -33,9 +33,10 @@ type CircuitBreakerConfig struct {
 }
 
 type ServiceConfig struct {
-	AuthServiceURL     string
-	AuthServiceGRPCURL string
-	UserServiceURL     string
+	AuthServiceURL         string
+	AuthServiceGRPCURL     string
+	UserServiceURL         string
+	NotificationServiceURL string
 	// Add more services as needed
 }
 
@@ -63,6 +64,7 @@ func Load() (*Config, error) {
 	authServiceURL := getEnv("AUTH_SERVICE_URL", "http://localhost:8080")
 	authServiceGRPCURL := getEnv("AUTH_SERVICE_GRPC_URL", "localhost:9090")
 	userServiceURL := getEnv("USER_SERVICE_URL", "http://localhost:8080")
+	notificationServiceURL := getEnv("NOTIFICATION_SERVICE_URL", "http://localhost:8080")
 
 	// Security configuration
 	enableCORS, err := getEnvAsBool("GATEWAY_ENABLE_CORS", true)
@@ -96,9 +98,10 @@ func Load() (*Config, error) {
 			RequestTimeout: requestTimeout,
 		},
 		Services: ServiceConfig{
-			AuthServiceURL:     authServiceURL,
-			AuthServiceGRPCURL: authServiceGRPCURL,
-			UserServiceURL:     userServiceURL,
+			AuthServiceURL:         authServiceURL,
+			AuthServiceGRPCURL:     authServiceGRPCURL,
+			UserServiceURL:         userServiceURL,
+			NotificationServiceURL: notificationServiceURL,
 		},
 		Security: SecurityConfig{
 			EnableCORS:     enableCORS,

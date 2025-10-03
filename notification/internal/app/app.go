@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"notification/internal/config"
-	"notification/internal/consumers"
-	"notification/internal/handler"
+	"github.com/nimbo1999/financeiro/notification/internal/config"
+	"github.com/nimbo1999/financeiro/notification/internal/consumers"
+	"github.com/nimbo1999/financeiro/notification/internal/handler"
 
 	"gorm.io/gorm"
 )

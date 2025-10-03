@@ -1,0 +1,30 @@
+@baseUrl=http://localhost:8080
+@RefreshToken=your_access_token
+
+# Requests the Authentication code
+###
+POST {{baseUrl}}/auth/request-code
+Content-Type: application/json
+
+{
+  "email": "matlopes1999@gmail.com"
+}
+
+# Verifies the authentication code
+###
+POST {{baseUrl}}/auth/verify-code
+Content-Type: application/json
+
+{
+  "email": "matlopes1999@gmail.com",
+  "code": ""
+}
+
+# Refreshes the access token
+###
+POST {{baseUrl}}/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refresh_token": "{{RefreshToken}}"
+}

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
-	"notification/internal/models"
-	"notification/internal/services"
+	"github.com/nimbo1999/financeiro/notification/internal/models"
+	"github.com/nimbo1999/financeiro/notification/internal/services"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )

@@ -17,7 +17,7 @@ run: g-cert-files
 	POSTGRES_CONNECTION_STRING=$(POSTGRES_CONNECTION_STRING) \
 	go run cmd/server/main.go
 
-build:
+build: g-cert-files
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go build -o $(BINARY_FILE_NAME) cmd/server/main.go
 

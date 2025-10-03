@@ -1,4 +1,7 @@
 services:
+  #======================================================================
+  #============ Infrastructure Services for Local Development ===========
+  #======================================================================
   user-postgres:
     image: postgres:15
     container_name: user_postgres_db
@@ -11,6 +14,13 @@ services:
     volumes:
       - user_postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - user_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matheus -d financeiro_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   authentication-postgres:
     image: postgres:15
@@ -23,6 +33,13 @@ services:
       - "25432:5432"
     volumes:
       - authentication_postgres_data:/var/lib/postgresql/data
+    networks:
+      - auth_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matheus -d financeiro_authentication"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   notification-postgres:
     image: postgres:15
@@ -36,19 +53,13 @@ services:
     volumes:
       - notification_postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: pgadmin_ui
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin # Using a fake password for development, but in production use a strong password!
-    ports:
-      - "80:80"
-    depends_on:
-      - user-postgres
-      - authentication-postgres
-    restart: unless-stopped
+    networks:
+      - notification_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matheus -d financeiro_notification"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -62,9 +73,112 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: unless-stopped
+    networks:
+      - application_network
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  #======================================================================
+  #======================= Application Services =========================
+  #======================================================================
+  users:
+    build:
+      context: .
+      dockerfile: users/Dockerfile
+    container_name: users_service
+    environment:
+      - HTTP_PORT=80
+      - GRPC_PORT=50051
+      - POSTGRES_CONNECTION_STRING=postgres://matheus:dev1234@user-postgres:5432/financeiro_user
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - user_network
+      - application_network
+
+  authentication:
+    build:
+      context: .
+      dockerfile: authentication/Dockerfile
+    container_name: authentication_service
+    environment:
+      - HTTP_PORT=80
+      - GRPC_PORT=50051
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672
+      - USER_GRPC_ADDRESS=users:50051
+      - POSTGRES_CONNECTION_STRING=postgres://matheus:dev1234@authentication-postgres:5432/financeiro_authentication
+    depends_on:
+      authentication-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      users:
+        condition: service_started
+    networks:
+      - auth_network
+      - application_network
+    restart: unless-stopped
+
+  notification:
+    build:
+      context: .
+      dockerfile: notification/Dockerfile
+    container_name: notification_service
+    environment:
+      - HTTP_PORT=80
+      - POSTGRES_CONNECTION_STRING=postgres://matheus:dev1234@notification-postgres:5432/financeiro_notification
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672
+      - SMTP_PORT=587
+      - SMTP_USERNAME=${EMAIL}
+      - SMTP_PASSWORD=${EMAIL_PASSWORD}
+      - SMTP_FROM=${EMAIL}
+    depends_on:
+      notification-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - notification_network
+      - application_network
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: api_gateway
+    environment:
+      - GATEWAY_PORT=8080
+      - USER_SERVICE_URL=http://users
+      - AUTH_SERVICE_URL=http://authentication
+      - NOTIFICATION_SERVICE_URL=http://notification
+      - AUTH_SERVICE_GRPC_URL=authentication:50051
+    ports:
+      - "8080:8080"
+    networks:
+      - application_network
+    restart: unless-stopped
 
 volumes:
   user_postgres_data:
   authentication_postgres_data:
   rabbitmq_data:
   notification_postgres_data:
+
+networks:
+  application_network:
+    driver: bridge
+  user_network:
+    driver: bridge
+  auth_network:
+    driver: bridge
+  notification_network:
+    driver: bridge

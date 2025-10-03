@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"notification/internal/models"
+	"github.com/nimbo1999/financeiro/notification/internal/models"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"

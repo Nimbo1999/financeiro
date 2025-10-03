@@ -60,7 +60,6 @@ func (s *emailService) sendEmail(to, subject, htmlBody string) error {
 	m.SetBody("text/html", htmlBody)
 
 	d := gomail.NewDialer(s.smtpHost, s.smtpPort, s.smtpUsername, s.smtpPassword)
-	d.SSL = true
 	// Enforce TLS 1.2 or higher
 	d.TLSConfig = &tls.Config{
 		ServerName:         s.smtpHost,

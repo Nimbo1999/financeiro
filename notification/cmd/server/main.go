@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"notification/internal/app"
-	"notification/internal/config"
-	"notification/internal/consumers"
-	"notification/internal/repository"
-	"notification/internal/services"
+	"github.com/nimbo1999/financeiro/notification/internal/app"
+	"github.com/nimbo1999/financeiro/notification/internal/config"
+	"github.com/nimbo1999/financeiro/notification/internal/consumers"
+	"github.com/nimbo1999/financeiro/notification/internal/repository"
+	"github.com/nimbo1999/financeiro/notification/internal/services"
 
 	"github.com/nimbo1999/financeiro/migrator"
 
