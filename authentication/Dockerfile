@@ -7,19 +7,19 @@ WORKDIR /app
 
 COPY authentication/ ./
 
-RUN make build
-RUN make build-health-checker
+RUN make OUTPUT_PATH="./bin" SERVICE_NAME="authentication" build
 
-RUN chmod +x ./app-server
+RUN chmod +x ./bin/authentication
+RUN chmod +x ./bin/authentication-health-checker
 
 FROM scratch
 
 WORKDIR /app
 
-COPY --from=builder /app/health-checker .
-COPY --from=builder /app/app-server .
+COPY --from=builder /app/bin/authentication-health-checker .
+COPY --from=builder /app/bin/authentication .
 COPY --from=builder /app/private_key.pem .
 COPY --from=builder /app/public_key.pem .
 COPY authentication/migrations migrations/
 
-CMD [ "/app/app-server" ]
+CMD [ "/app/bin/authentication" ]

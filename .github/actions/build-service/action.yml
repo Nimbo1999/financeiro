@@ -1,0 +1,45 @@
+name: "Build Go Service"
+description: "Build a Go microservice"
+
+inputs:
+  service-name:
+    description: "Name of the service to build"
+    required: true
+  output-path:
+    description: "Output path for binary"
+    required: false
+    default: "./bin"
+
+outputs:
+  binary-path:
+    description: "Full path to the compiled binary"
+    value: ${{ steps.build.outputs.binary-path }}
+  health-binary-path:
+    description: "Full path to the compiled health checker binary"
+    value: ${{ steps.build.outputs.health-binary-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download dependencies
+      shell: bash
+      working-directory: ${{ inputs.service-name }}
+      run: |
+        echo "📦 Downloading dependencies for ${{ inputs.service-name }}..."
+        go mod download
+        go mod verify
+
+    - name: Build service
+      id: build
+      shell: bash
+      working-directory: ${{ inputs.service-name }}
+      run: |
+        echo "🔨 Building ${{ inputs.service-name }}..."
+        make OUTPUT_PATH="${{ inputs.output-path }}" SERVICE_NAME="${{ inputs.service-name }}" build
+
+        BINARY_PATH="${{ inputs.service-name }}/${{ inputs.output-path }}/${{ inputs.service-name }}"
+        echo "binary-path=$BINARY_PATH" >> $GITHUB_OUTPUT
+        echo "health-binary-path=${BINARY_PATH}-health-checker" >> $GITHUB_OUTPUT
+
+        echo "✅ Build completed: $BINARY_PATH"
+        ls -lh ${{ inputs.output-path }}/${{ inputs.service-name }}

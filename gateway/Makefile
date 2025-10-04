@@ -1,11 +1,12 @@
-BINARY_FILE_NAME=app-server
+SERVICE_NAME=${SERVICE_NAME:=gateway}
+OUTPUT_PATH=${OUTPUT_PATH:=./bin}
 USER_SERVICE_URL=http://localhost:8081
 AUTH_SERVICE_URL=http://localhost:8082
 AUTH_SERVICE_GRPC_URL=localhost:9092
 NOTIFICATION_SERVICE_URL=http://localhost:8084
 GATEWAY_PORT=8083
 
-PHONY: run build build-health-checker unit-test
+PHONY: run build build-health-checker create-bin-dir unit-test
 
 run:
 	GATEWAY_PORT=$(GATEWAY_PORT) \
@@ -15,13 +16,16 @@ run:
 	NOTIFICATION_SERVICE_URL=$(NOTIFICATION_SERVICE_URL) \
 	go run cmd/server/main.go
 
-build:
+build: build-health-checker
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-	go build -o $(BINARY_FILE_NAME) cmd/server/main.go
+	go build -ldflags="-w -s" -o $(OUTPUT_PATH)/$(SERVICE_NAME) cmd/server/main.go
 
 build-health-checker:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-	go build -o health-checker cmd/health_checker/main.go
+	go build -ldflags="-w -s" -o $(OUTPUT_PATH)/$(SERVICE_NAME)-health-checker cmd/health_checker/main.go
+
+create-bin-dir:
+	mkdir -p $(OUTPUT_PATH)
 
 unit-test:
 	go test -v -cover ./... -coverprofile=coverage.out

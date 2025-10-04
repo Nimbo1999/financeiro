@@ -108,7 +108,7 @@ services:
       - user_network
       - application_network
     healthcheck:
-      test: ["CMD", "/app/health-checker"]
+      test: ["CMD", "/app/bin/users-health-checker"]
       interval: 30s
       timeout: 10s
       retries: 2
@@ -137,7 +137,7 @@ services:
       - application_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "/app/health-checker"]
+      test: ["CMD", "/app/bin/authentication-health-checker"]
       interval: 30s
       timeout: 10s
       retries: 2
@@ -166,7 +166,7 @@ services:
       - application_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "/app/health-checker"]
+      test: ["CMD", "/app/bin/notification-health-checker"]
       interval: 30s
       timeout: 10s
       retries: 2
@@ -189,7 +189,7 @@ services:
       - application_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "/app/health-checker"]
+      test: ["CMD", "/app/bin/gateway-health-checker"]
       interval: 30s
       timeout: 10s
       retries: 2

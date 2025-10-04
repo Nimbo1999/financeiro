@@ -6,17 +6,17 @@ WORKDIR /app
 
 COPY users/ ./
 
-RUN make build
-RUN make build-health-checker
+RUN make OUTPUT_PATH="./bin" SERVICE_NAME="users" build
 
-RUN chmod +x ./app-server
+RUN chmod +x ./bin/users
+RUN chmod +x ./bin/users-health-checker
 
 FROM scratch
 
 WORKDIR /app
 
-COPY --from=builder /app/health-checker .
-COPY --from=builder /app/app-server .
+COPY --from=builder /app/bin/users-health-checker .
+COPY --from=builder /app/bin/users .
 COPY users/migrations migrations/
 
-CMD [ "/app/app-server" ]
+CMD [ "/app/bin/users" ]

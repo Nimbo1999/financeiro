@@ -1,0 +1,39 @@
+name: "Setup Go Environment"
+description: "Setup Go with caching and tools installation"
+
+inputs:
+  go-version:
+    description: "Go version to use"
+    required: false
+    default: "1.24"
+
+outputs:
+  cache-hit:
+    description: "Whether cache was hit"
+    value: ${{ steps.cache-go-modules.outputs.cache-hit }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ inputs.go-version }}
+
+    - name: Cache Go modules
+      id: cache-go-modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Install tools
+      shell: bash
+      run: |
+        echo "📦 Installing Go tools..."
+        go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+        echo "✅ Tools installed"
