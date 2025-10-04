@@ -3,7 +3,7 @@ services:
   #============ Infrastructure Services for Local Development ===========
   #======================================================================
   user-postgres:
-    image: postgres:15
+    image: postgres:15-alpine3.22
     container_name: user_postgres_db
     environment:
       POSTGRES_USER: matheus
@@ -24,7 +24,7 @@ services:
       start_interval: 5s
 
   authentication-postgres:
-    image: postgres:15
+    image: postgres:15-alpine3.22
     container_name: authentication_postgres_db
     environment:
       POSTGRES_USER: matheus
@@ -44,7 +44,7 @@ services:
       start_interval: 5s
 
   notification-postgres:
-    image: postgres:15
+    image: postgres:15-alpine3.22
     container_name: notification_postgres_db
     environment:
       POSTGRES_USER: matheus
@@ -65,7 +65,7 @@ services:
       start_interval: 5s
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3-management-alpine
     container_name: rabbitmq_server
     environment:
       RABBITMQ_DEFAULT_USER: admin
