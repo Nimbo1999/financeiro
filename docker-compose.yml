@@ -21,6 +21,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_interval: 5s
 
   authentication-postgres:
     image: postgres:15
@@ -40,6 +41,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_interval: 5s
 
   notification-postgres:
     image: postgres:15
@@ -60,6 +62,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_interval: 5s
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -80,6 +83,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+      start_interval: 5s
 
   #======================================================================
   #======================= Application Services =========================
@@ -103,6 +107,12 @@ services:
     networks:
       - user_network
       - application_network
+    healthcheck:
+      test: ["CMD", "/app/health-checker"]
+      interval: 30s
+      timeout: 10s
+      retries: 2
+      start_interval: 10s
 
   authentication:
     build:
@@ -126,6 +136,12 @@ services:
       - auth_network
       - application_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/app/health-checker"]
+      interval: 30s
+      timeout: 10s
+      retries: 2
+      start_interval: 10s
 
   notification:
     build:
@@ -149,6 +165,12 @@ services:
       - notification_network
       - application_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/app/health-checker"]
+      interval: 30s
+      timeout: 10s
+      retries: 2
+      start_interval: 10s
 
   gateway:
     build:
@@ -166,6 +188,12 @@ services:
     networks:
       - application_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/app/health-checker"]
+      interval: 30s
+      timeout: 10s
+      retries: 2
+      start_interval: 10s
 
 volumes:
   user_postgres_data:

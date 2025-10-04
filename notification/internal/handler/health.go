@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+type HealthResponse struct {
+	Status  string `json:"status"`
+	Service string `json:"service"`
+}
+
 type HealthHandler struct{}
 
 func NewHealthHandler() *HealthHandler {
@@ -14,8 +19,8 @@ func NewHealthHandler() *HealthHandler {
 func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"status":  "healthy",
-		"service": "notification",
+	json.NewEncoder(w).Encode(HealthResponse{
+		Status:  "healthy",
+		Service: "notification",
 	})
 }

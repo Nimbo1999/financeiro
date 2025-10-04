@@ -5,7 +5,7 @@ AUTH_SERVICE_GRPC_URL=localhost:9092
 NOTIFICATION_SERVICE_URL=http://localhost:8084
 GATEWAY_PORT=8083
 
-PHONY: run build unit-test
+PHONY: run build build-health-checker unit-test
 
 run:
 	GATEWAY_PORT=$(GATEWAY_PORT) \
@@ -18,6 +18,10 @@ run:
 build:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go build -o $(BINARY_FILE_NAME) cmd/server/main.go
+
+build-health-checker:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+	go build -o health-checker cmd/health_checker/main.go
 
 unit-test:
 	go test -v -cover ./... -coverprofile=coverage.out

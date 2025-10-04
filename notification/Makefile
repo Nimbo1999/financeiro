@@ -6,7 +6,7 @@ SMTP_USERNAME=${EMAIL}
 SMTP_PASSWORD=${EMAIL_PASSWORD}
 RABBITMQ_URL=amqp://admin:admin123@localhost:5672/ # Using weak password configured in docker for local development
 
-.PHONY: run build test unit-test
+.PHONY: run build build-health-checker test unit-test
 
 run:
 	HTTP_PORT=8084 \
@@ -21,6 +21,10 @@ run:
 build:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go build -o $(BINARY_FILE_NAME) cmd/server/main.go
+
+build-health-checker:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+	go build -o health-checker cmd/health_checker/main.go
 
 unit-test:
 	go test ./... -v -cover -coverprofile=coverage.out

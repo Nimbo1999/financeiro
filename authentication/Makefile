@@ -7,7 +7,7 @@ POSTGRES_CONNECTION_STRING=postgres://matheus:dev1234@localhost:$(DB_PORT)/$(DB_
 RABBITMQ_URL=amqp://admin:admin123@localhost:5672/ # Using weak password configured in docker for local development
 USER_GRPC_ADDRESS=localhost:9091
 
-PHONY: run build unit-test g-cert-files
+PHONY: run build build-health-checker unit-test g-cert-files
 
 run: g-cert-files
 	HTTP_PORT=$(HTTP_PORT) \
@@ -20,6 +20,10 @@ run: g-cert-files
 build: g-cert-files
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go build -o $(BINARY_FILE_NAME) cmd/server/main.go
+
+build-health-checker:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+	go build -o health-checker cmd/health_checker/main.go
 
 unit-test:
 	go test -v -cover ./... -coverprofile=coverage.out

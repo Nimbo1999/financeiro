@@ -6,7 +6,7 @@ DB_PORT=15432
 POSTGRES_CONNECTION_STRING=postgres://matheus:dev1234@localhost:$(DB_PORT)/$(DB_NAME)
 RABBITMQ_URL=amqp://admin:admin123@localhost:5672
 
-PHONY: run build generate-proto
+PHONY: run build build-health-checker generate-proto
 
 run:
 	HTTP_PORT=$(HTTP_PORT) \
@@ -18,6 +18,10 @@ run:
 build:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go build -o $(BINARY_FILE_NAME) cmd/container/main.go
+
+build-health-checker:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+	go build -o health-checker cmd/health_checker/main.go
 
 generate-proto:
 	./scripts/generate_proto.sh
