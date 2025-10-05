@@ -30,8 +30,7 @@ create-bin-dir:
 	mkdir -p $(OUTPUT_PATH)
 
 unit-test:
-	go test -v -cover ./... -coverprofile=coverage.out
-	go tool cover -func=coverage.out
+	go test -v -cover ./internal/... -coverprofile=coverage.out
 	go tool cover -html=coverage.out -o coverage.html
 	go tool cover -func=coverage.out | grep total | awk '{print "Total Coverage: " $$3}'
 

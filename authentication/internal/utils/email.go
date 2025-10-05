@@ -8,6 +8,11 @@ func IsValidEmail(email string) bool {
 		return false
 	}
 
+	// Check for spaces
+	if strings.Count(strings.TrimSpace(email), " ") > 0 {
+		return false
+	}
+
 	// Check for exactly one @ symbol
 	atCount := strings.Count(email, "@")
 	if atCount != 1 {

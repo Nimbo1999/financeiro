@@ -178,13 +178,13 @@ services:
       dockerfile: gateway/Dockerfile
     container_name: api_gateway
     environment:
-      - GATEWAY_PORT=8080
+      - GATEWAY_PORT=80
       - USER_SERVICE_URL=http://users
       - AUTH_SERVICE_URL=http://authentication
       - NOTIFICATION_SERVICE_URL=http://notification
       - AUTH_SERVICE_GRPC_URL=authentication:50051
     ports:
-      - "8080:8080"
+      - "80:80"
     networks:
       - application_network
     restart: unless-stopped

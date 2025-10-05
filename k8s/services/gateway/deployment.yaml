@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: financeiro
+  labels:
+    app: gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+      - name: gateway
+        image: docker.io/nimbo/gateway:latest
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: GATEWAY_PORT
+          value: "80"
+        - name: USER_SERVICE_URL
+          value: "http://users"
+        - name: AUTH_SERVICE_URL
+          value: "http://authentication"
+        - name: AUTH_SERVICE_GRPC_URL
+          value: "authentication:50051"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"

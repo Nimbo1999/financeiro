@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentication
+  namespace: financeiro
+  labels:
+    app: authentication
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+    - port: 50051
+      targetPort: 50051
+      protocol: TCP
+      name: grpc
+  selector:
+    app: authentication

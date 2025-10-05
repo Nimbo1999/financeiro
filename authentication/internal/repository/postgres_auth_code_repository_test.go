@@ -55,9 +55,9 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_Success() {
 	}
 
 	suite.mock.ExpectBegin()
-	suite.mock.ExpectExec(`INSERT INTO "auth_codes"`).
-		WithArgs(authCode.UserID, authCode.Code, authCode.ExpiresAt, sqlmock.AnyArg(), authCode.CreatedAt).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+	suite.mock.ExpectQuery(`INSERT INTO "auth_codes"`).
+		WithArgs(authCode.UserID, authCode.Code, authCode.ExpiresAt, authCode.CreatedAt).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("test-id"))
 	suite.mock.ExpectCommit()
 
 	err := suite.repo.Create(context.Background(), authCode)
@@ -81,8 +81,8 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_DatabaseError() {
 	}
 
 	suite.mock.ExpectBegin()
-	suite.mock.ExpectExec(`INSERT INTO "auth_codes"`).
-		WithArgs(authCode.UserID, authCode.Code, authCode.ExpiresAt, sqlmock.AnyArg(), authCode.CreatedAt).
+	suite.mock.ExpectQuery(`INSERT INTO "auth_codes"`).
+		WithArgs(authCode.UserID, authCode.Code, authCode.ExpiresAt, authCode.CreatedAt).
 		WillReturnError(errors.New("database connection failed"))
 	suite.mock.ExpectRollback()
 
@@ -254,10 +254,9 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_TableDriven() {
 			},
 			setupMock: func() {
 				suite.mock.ExpectBegin()
-				suite.mock.ExpectExec(`INSERT INTO "auth_codes"`).
-					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(),
-						sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
-					WillReturnResult(sqlmock.NewResult(1, 1))
+				suite.mock.ExpectQuery(`INSERT INTO "auth_codes"`).
+					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("test-id"))
 				suite.mock.ExpectCommit()
 			},
 			expectError: false,
@@ -279,9 +278,8 @@ func (suite *PostgresAuthCodeRepositoryTestSuite) TestCreate_TableDriven() {
 			},
 			setupMock: func() {
 				suite.mock.ExpectBegin()
-				suite.mock.ExpectExec(`INSERT INTO "auth_codes"`).
-					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(),
-						sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+				suite.mock.ExpectQuery(`INSERT INTO "auth_codes"`).
+					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnError(errors.New("constraint violation"))
 				suite.mock.ExpectRollback()
 			},
@@ -332,10 +330,9 @@ func BenchmarkCreate(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		mock.ExpectBegin()
-		mock.ExpectExec(`INSERT INTO "auth_codes"`).
-			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
-				sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
-			WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectQuery(`INSERT INTO "auth_codes"`).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("bench-id"))
 		mock.ExpectCommit()
 
 		_ = repo.Create(context.Background(), authCode)
