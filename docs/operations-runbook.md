@@ -29,23 +29,23 @@ If health checks fail, the pipeline automatically rolls back.
 ssh -i ~/.ssh/key <USERNAME>@<VPS_IP>
 
 # Rollback specific service
-kubectl rollout undo deployment/SERVICE_NAME -n finaceiro
+kubectl rollout undo deployment/SERVICE_NAME -n financeiro
 
 # Verify rollback
-kubectl rollout status deployment/SERVICE_NAME -n finaceiro
+kubectl rollout status deployment/SERVICE_NAME -n financeiro
 ```
 
 ### Viewing Logs
 
 ```bash
 # Real-time logs
-kubectl logs -f deployment/SERVICE_NAME -n finaceiro
+kubectl logs -f deployment/SERVICE_NAME -n financeiro
 
 # Last 100 lines
-kubectl logs deployment/SERVICE_NAME -n finaceiro --tail=100
+kubectl logs deployment/SERVICE_NAME -n financeiro --tail=100
 
 # All pods with specific label
-kubectl logs -l app=SERVICE_NAME -n finaceiro
+kubectl logs -l app=SERVICE_NAME -n financeiro
 ```
 
 ### Common Issues
@@ -53,8 +53,8 @@ kubectl logs -l app=SERVICE_NAME -n finaceiro
 #### Pod Not Starting
 
 ```bash
-kubectl describe pod POD_NAME -n finaceiro
-kubectl logs POD_NAME -n finaceiro
+kubectl describe pod POD_NAME -n financeiro
+kubectl logs POD_NAME -n financeiro
 ```
 
 #### ImagePullBackOff
@@ -73,14 +73,14 @@ kubectl logs POD_NAME -n finaceiro
 
 ```bash
 # Check pod status
-kubectl get pods -n finaceiro
+kubectl get pods -n financeiro
 
 # Check resource usage
-kubectl top pods -n finaceiro
+kubectl top pods -n financeiro
 kubectl top nodes
 
 # Check events
-kubectl get events -n finaceiro --sort-by='.lastTimestamp'
+kubectl get events -n financeiro --sort-by='.lastTimestamp'
 ```
 
 ### Database Migrations
@@ -88,7 +88,7 @@ kubectl get events -n finaceiro --sort-by='.lastTimestamp'
 Migrations run automatically on service startup. To run manually:
 
 ```bash
-kubectl exec -it deployment/SERVICE_NAME -n finaceiro -- \
+kubectl exec -it deployment/SERVICE_NAME -n financeiro -- \
   /app/migrate -path /app/migrations -database "postgres://..." up
 ```
 ````

@@ -8,7 +8,7 @@ Infrastructure components:
 - **1 instance RabbitMQ** (with management UI)
 - **Persistent Volumes** for persistent data
 
-## Arquitecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐

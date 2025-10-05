@@ -3,7 +3,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: default-deny-all
-  namespace: finance-app
+  namespace: financeiro
 spec:
   podSelector: {}
   policyTypes:
@@ -15,7 +15,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-dns
-  namespace: finance-app
+  namespace: financeiro
 spec:
   podSelector: {}
   policyTypes:
@@ -34,7 +34,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: gateway-policy
-  namespace: finance-app
+  namespace: financeiro
 spec:
   podSelector:
     matchLabels:
@@ -66,7 +66,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: users-policy
-  namespace: finance-app
+  namespace: financeiro
 spec:
   podSelector:
     matchLabels:
@@ -102,7 +102,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: authentication-policy
-  namespace: finance-app
+  namespace: financeiro
 spec:
   podSelector:
     matchLabels:
@@ -149,7 +149,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: notification-policy
-  namespace: finance-app
+  namespace: financeiro
 spec:
   podSelector:
     matchLabels:
@@ -178,7 +178,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: postgres-users-policy
-  namespace: finance-app
+  namespace: financeiro
 spec:
   podSelector:
     matchLabels:
@@ -199,7 +199,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: postgres-auth-policy
-  namespace: finance-app
+  namespace: financeiro
 spec:
   podSelector:
     matchLabels:
@@ -220,7 +220,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: postgres-notification-policy
-  namespace: finance-app
+  namespace: financeiro
 spec:
   podSelector:
     matchLabels:
@@ -242,7 +242,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: rabbitmq-policy
-  namespace: finance-app
+  namespace: financeiro
 spec:
   podSelector:
     matchLabels:
