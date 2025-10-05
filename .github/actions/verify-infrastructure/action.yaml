@@ -47,10 +47,14 @@ runs:
           fi
 
           # Check PostgreSQL instances
-          for db in users auth notification; do
+          for db in users notification auth; do
             if ! kubectl get deployment postgres-$db -n ${{ inputs.namespace }} &> /dev/null; then
               echo "❌ PostgreSQL $db not found. Please run infrastructure setup first."
               exit 1
+            fi
+
+            if [ "$db" = "auth" ]; then
+              db="authentication"
             fi
 
             if ! kubectl wait --for=condition=ready pod -l app=postgres,database=$db -n ${{ inputs.namespace }} --timeout=10s; then

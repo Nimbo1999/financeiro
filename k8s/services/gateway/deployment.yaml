@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: docker.io/nimbo/gateway:latest
+        image: nimbo/gateway:latest
         ports:
         - containerPort: 80
           name: http

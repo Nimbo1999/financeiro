@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: users
-          image: docker.io/nimbo/users:latest
+          image: nimbo/users:latest
           ports:
             - containerPort: 80
               name: http

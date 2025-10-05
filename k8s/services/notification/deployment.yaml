@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: notification
-          image: docker.io/nimbo/notification:latest
+          image: nimbo/notification:latest
           ports:
             - containerPort: 80
               name: http
