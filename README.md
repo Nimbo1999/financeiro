@@ -1,6 +1,7 @@
 ## Comprehencive docs about project topics
 
 - [How to write tests on golang services](docs/how-to-write-tests.md)
+- [How to perform Smoke Tests (Stress tests)](docs/smoke-test.md)
 
 ## Infrastructure
 
