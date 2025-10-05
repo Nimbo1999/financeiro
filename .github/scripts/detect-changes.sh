@@ -10,7 +10,7 @@ PREVIOUS_TAG=$(git describe --tags --abbrev=0 "$CURRENT_TAG^" 2>/dev/null || ech
 
 if [[ -z "$PREVIOUS_TAG" ]]; then
     echo "⚠️  No previous tag found. Will deploy all services."
-    CHANGED_SERVICES="${SERVICES[@]}"
+    CHANGED_SERVICES=("${SERVICES[@]}")
 else
     echo "📊 Comparing $PREVIOUS_TAG → $CURRENT_TAG"
 
