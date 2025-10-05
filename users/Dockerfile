@@ -15,8 +15,8 @@ FROM scratch
 
 WORKDIR /app
 
-COPY --from=builder /app/bin/users-health-checker .
-COPY --from=builder /app/bin/users .
-COPY users/migrations migrations/
+COPY --from=builder /app/bin/users-health-checker bin/users-health-checker
+COPY --from=builder /app/bin/users bin/users
+COPY users/migrations ./migrations
 
 CMD [ "/app/bin/users" ]

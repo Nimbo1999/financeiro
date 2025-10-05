@@ -15,7 +15,7 @@ FROM scratch
 
 WORKDIR /app
 
-COPY --from=builder /app/bin/gateway-health-checker .
-COPY --from=builder /app/bin/gateway .
+COPY --from=builder /app/bin/gateway-health-checker bin/gateway-health-checker
+COPY --from=builder /app/bin/gateway bin/gateway
 
 CMD [ "/app/bin/gateway" ]

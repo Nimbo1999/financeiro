@@ -28,9 +28,9 @@ WORKDIR /app
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /etc/resolv.conf /etc/resolv.conf
 
-COPY --from=builder /app/bin/notification .
-COPY --from=builder /app/bin/notification-health-checker .
-COPY notification/migrations migrations/
-COPY notification/internal/templates internal/templates/
+COPY --from=builder /app/bin/notification bin/notification
+COPY --from=builder /app/bin/notification-health-checker bin/notification-health-checker
+COPY notification/migrations ./migrations
+COPY notification/internal/templates ./internal/templates/
 
 CMD [ "/app/bin/notification" ]
