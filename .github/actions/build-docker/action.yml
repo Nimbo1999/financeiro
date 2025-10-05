@@ -40,7 +40,7 @@ runs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ${{ inputs.registry }}/${{ github.repository_owner }}/${{ inputs.service-name }}
+        images: ${{ inputs.registry-username }}/${{ inputs.service-name }}
         tags: |
           type=semver,pattern={{version}},value=${{ inputs.image-tag }}
           type=semver,pattern={{major}}.{{minor}},value=${{ inputs.image-tag }}
@@ -64,6 +64,6 @@ runs:
     - name: Output image name
       shell: bash
       run: |
-        IMAGE="${{ inputs.registry }}/${{ github.repository_owner }}/${{ inputs.service-name }}:${{ inputs.image-tag }}"
+        IMAGE="${{ inputs.registry-username }}/${{ inputs.service-name }}:${{ inputs.image-tag }}"
         echo "image=$IMAGE" >> $GITHUB_OUTPUT
         echo "🐳 Built image: $IMAGE"

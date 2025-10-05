@@ -8,8 +8,8 @@ inputs:
   image-tag:
     description: "Docker image tag"
     required: true
-  registry:
-    description: "Docker registry URL"
+  registry-username:
+    description: "Registry username"
     required: true
   ssh-host:
     description: "SSH host"
@@ -48,7 +48,7 @@ runs:
       run: |
         echo "🚀 Deploying ${{ inputs.service-name }} to K3S..."
 
-        IMAGE="${{ inputs.registry }}/${{ github.repository_owner }}/${{ inputs.service-name }}:${{ inputs.image-tag }}"
+        IMAGE="${{ inputs.registry-username }}/${{ inputs.service-name }}:${{ inputs.image-tag }}"
 
         # Update deployment image via SSH
         ssh -i ~/.ssh/deploy_key ${{ inputs.ssh-user }}@${{ inputs.ssh-host }} << EOF
