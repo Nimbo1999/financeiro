@@ -1,0 +1,81 @@
+name: "Verify K8S Infrastructure"
+description: "Verify K8S infrastructure setup"
+
+inputs:
+  ssh-private-key:
+    description: "SSH private key"
+    required: true
+  ssh-host:
+    description: "SSH host"
+    required: true
+  ssh-user:
+    description: "SSH user"
+    required: true
+  namespace:
+    description: "Kubernetes namespace"
+    required: false
+    default: "default"
+
+outputs:
+  cache-hit:
+    description: "Whether cache was hit"
+    value: ${{ steps.cache-go-modules.outputs.cache-hit }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup SSH
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ inputs.ssh-private-key }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh-keyscan -H ${{ inputs.ssh-host }} >> ~/.ssh/known_hosts
+
+    - name: Check infrastructure status
+      shell: bash
+      run: |
+        ssh -i ~/.ssh/deploy_key ${{ inputs.ssh-user }}@${{ inputs.ssh-host }} << 'EOF'
+          set -e
+
+          echo "🔍 Checking infrastructure..."
+
+          # Check if namespace exists
+          if ! kubectl get namespace ${{ inputs.namespace }} &> /dev/null; then
+            echo "❌ Namespace ${{ inputs.namespace }} does not exist. Please run infrastructure setup first."
+            exit 1
+          fi
+
+          # Check PostgreSQL instances
+          for db in users auth notification; do
+            if ! kubectl get deployment postgres-$db -n ${{ inputs.namespace }} &> /dev/null; then
+              echo "❌ PostgreSQL $db not found. Please run infrastructure setup first."
+              exit 1
+            fi
+
+            if ! kubectl wait --for=condition=ready pod -l app=postgres,database=$db -n ${{ inputs.namespace }} --timeout=10s; then
+              echo "⚠️  PostgreSQL $db is not ready yet"
+            else
+              echo "✅ PostgreSQL $db is ready"
+            fi
+          done
+
+          # Check RabbitMQ
+          if ! kubectl get deployment rabbitmq -n ${{ inputs.namespace }} &> /dev/null; then
+            echo "❌ RabbitMQ not found. Please run infrastructure setup first."
+            exit 1
+          fi
+
+          if ! kubectl wait --for=condition=ready pod -l app=rabbitmq -n ${{ inputs.namespace }} --timeout=10s; then
+            echo "⚠️  RabbitMQ is not ready yet"
+          else
+            echo "✅ RabbitMQ is ready"
+          fi
+
+          echo "✅ Infrastructure verification completed"
+        EOF
+
+    - name: Cleanup SSH
+      if: always()
+      shell: bash
+      run: rm -f ~/.ssh/deploy_key

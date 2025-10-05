@@ -1,0 +1,264 @@
+# Política padrão - negar todo tráfego
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: finance-app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Permitir DNS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: finance-app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+---
+# Gateway pode acessar users e authentication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gateway-policy
+  namespace: finance-app
+spec:
+  podSelector:
+    matchLabels:
+      app: gateway
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: users
+      ports:
+        - protocol: TCP
+          port: 8081
+        - protocol: TCP
+          port: 9091
+    - to:
+        - podSelector:
+            matchLabels:
+              app: authentication
+      ports:
+        - protocol: TCP
+          port: 8082
+        - protocol: TCP
+          port: 9092
+---
+# Users pode acessar seu PostgreSQL
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: users-policy
+  namespace: finance-app
+spec:
+  podSelector:
+    matchLabels:
+      app: users
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: gateway
+        - podSelector:
+            matchLabels:
+              app: authentication
+      ports:
+        - protocol: TCP
+          port: 8081
+        - protocol: TCP
+          port: 9091
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+              database: users
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+# Authentication pode acessar PostgreSQL, RabbitMQ e Users service
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: authentication-policy
+  namespace: finance-app
+spec:
+  podSelector:
+    matchLabels:
+      app: authentication
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: gateway
+      ports:
+        - protocol: TCP
+          port: 8082
+        - protocol: TCP
+          port: 9092
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+              database: authentication
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app: rabbitmq
+      ports:
+        - protocol: TCP
+          port: 5672
+    - to:
+        - podSelector:
+            matchLabels:
+              app: users
+      ports:
+        - protocol: TCP
+          port: 9091
+---
+# Notification pode acessar PostgreSQL e RabbitMQ
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: notification-policy
+  namespace: finance-app
+spec:
+  podSelector:
+    matchLabels:
+      app: notification
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+              database: notification
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app: rabbitmq
+      ports:
+        - protocol: TCP
+          port: 5672
+---
+# PostgreSQL aceita conexões dos serviços específicos
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-users-policy
+  namespace: finance-app
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+      database: users
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: users
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-auth-policy
+  namespace: finance-app
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+      database: authentication
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: authentication
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-notification-policy
+  namespace: finance-app
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+      database: notification
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: notification
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+# RabbitMQ aceita conexões de authentication e notification
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rabbitmq-policy
+  namespace: finance-app
+spec:
+  podSelector:
+    matchLabels:
+      app: rabbitmq
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: authentication
+        - podSelector:
+            matchLabels:
+              app: notification
+      ports:
+        - protocol: TCP
+          port: 5672
+        - protocol: TCP
+          port: 15672
