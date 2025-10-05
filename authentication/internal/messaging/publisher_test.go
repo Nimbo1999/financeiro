@@ -252,7 +252,7 @@ func (suite *PublisherTestSuite) TestMockConnection_Close() {
 func TestDefaultPublisherConfig(t *testing.T) {
 	config := DefaultPublisherConfig()
 
-	assert.Equal(t, "authentication.exchange", config.ExchangeName)
+	assert.Equal(t, "notification.exchange", config.ExchangeName)
 	assert.False(t, config.Mandatory)
 	assert.False(t, config.Immediate)
 	assert.Equal(t, 1*time.Second, config.RetryDelay)

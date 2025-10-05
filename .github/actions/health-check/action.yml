@@ -1,0 +1,60 @@
+name: "Health Check"
+description: "Verify service health after deployment"
+
+inputs:
+  service-name:
+    description: "Name of the service"
+    required: true
+  health-endpoint:
+    description: "Health check endpoint URL"
+    required: true
+  max-retries:
+    description: "Maximum number of retries"
+    required: false
+    default: "10"
+  retry-delay:
+    description: "Delay between retries in seconds"
+    required: false
+    default: "5"
+
+outputs:
+  is-healthy:
+    description: "Whether service is healthy"
+    value: ${{ steps.check.outputs.healthy }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Health check
+      id: check
+      shell: bash
+      run: |
+        echo "🏥 Checking health of ${{ inputs.service-name }}..."
+
+        MAX_RETRIES=${{ inputs.max-retries }}
+        RETRY_DELAY=${{ inputs.retry-delay }}
+        RETRY_COUNT=0
+
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES..."
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${{ inputs.health-endpoint }} || echo "000")
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Service is healthy! (HTTP $HTTP_CODE)"
+            echo "healthy=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "⚠️  Service not ready yet (HTTP $HTTP_CODE)"
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+
+          if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "⏳ Waiting ${RETRY_DELAY}s before retry..."
+            sleep $RETRY_DELAY
+          fi
+        done
+
+        echo "❌ Service failed health check after $MAX_RETRIES attempts"
+        echo "healthy=false" >> $GITHUB_OUTPUT
+        exit 1

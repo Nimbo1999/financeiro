@@ -6,11 +6,10 @@ WORKDIR /app
 
 COPY notification/ ./
 
-RUN make build
-RUN make build-health-checker
+RUN make OUTPUT_PATH="./bin" SERVICE_NAME="notification" build
 
-RUN chmod +x ./app-server
-RUN chmod +x ./health-checker
+RUN chmod +x ./bin/notification
+RUN chmod +x ./bin/notification-health-checker
 
 FROM scratch
 
@@ -29,9 +28,9 @@ WORKDIR /app
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /etc/resolv.conf /etc/resolv.conf
 
-COPY --from=builder /app/app-server .
-COPY --from=builder /app/health-checker .
+COPY --from=builder /app/bin/notification .
+COPY --from=builder /app/bin/notification-health-checker .
 COPY notification/migrations migrations/
 COPY notification/internal/templates internal/templates/
 
-CMD [ "/app/app-server" ]
+CMD [ "/app/bin/notification" ]

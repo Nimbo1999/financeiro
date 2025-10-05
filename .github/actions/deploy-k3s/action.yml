@@ -1,0 +1,79 @@
+name: "Deploy to K3S"
+description: "Deploy service to K3S cluster"
+
+inputs:
+  service-name:
+    description: "Name of the service"
+    required: true
+  image-tag:
+    description: "Docker image tag"
+    required: true
+  registry:
+    description: "Docker registry URL"
+    required: true
+  ssh-host:
+    description: "SSH host"
+    required: true
+  ssh-user:
+    description: "SSH user"
+    required: true
+  ssh-private-key:
+    description: "SSH private key"
+    required: true
+  namespace:
+    description: "Kubernetes namespace"
+    required: false
+    default: "default"
+
+outputs:
+  deployment-status:
+    description: "Deployment status"
+    value: ${{ steps.deploy.outputs.status }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup SSH
+      shell: bash
+      run: |
+        echo "🔐 Setting up SSH..."
+        mkdir -p ~/.ssh
+        echo "${{ inputs.ssh-private-key }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh-keyscan -H ${{ inputs.ssh-host }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to K3S
+      id: deploy
+      shell: bash
+      run: |
+        echo "🚀 Deploying ${{ inputs.service-name }} to K3S..."
+
+        IMAGE="${{ inputs.registry }}/${{ github.repository_owner }}/${{ inputs.service-name }}:${{ inputs.image-tag }}"
+
+        # Update deployment image via SSH
+        ssh -i ~/.ssh/deploy_key ${{ inputs.ssh-user }}@${{ inputs.ssh-host }} << EOF
+          set -e
+
+          # Update image in deployment
+          kubectl set image deployment/${{ inputs.service-name }} \
+            ${{ inputs.service-name }}=$IMAGE \
+            -n ${{ inputs.namespace }}
+
+          # Wait for rollout
+          echo "⏳ Waiting for rollout to complete..."
+          kubectl rollout status deployment/${{ inputs.service-name }} \
+            -n ${{ inputs.namespace }} \
+            --timeout=5m
+
+          # Check pod status
+          kubectl get pods -n ${{ inputs.namespace }} -l app=${{ inputs.service-name }}
+        EOF
+
+        echo "status=success" >> $GITHUB_OUTPUT
+        echo "✅ Deployment completed successfully"
+
+    - name: Cleanup SSH
+      if: always()
+      shell: bash
+      run: |
+        rm -f ~/.ssh/deploy_key

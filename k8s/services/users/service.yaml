@@ -1,0 +1,21 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: users
+  namespace: financeiro
+  labels:
+    app: users
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+    - port: 50051
+      targetPort: 50051
+      protocol: TCP
+      name: grpc
+  selector:
+    app: users

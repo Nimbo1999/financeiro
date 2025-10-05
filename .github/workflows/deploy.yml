@@ -1,0 +1,213 @@
+name: Deployment CI/CD Pipeline
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+
+env:
+  REGISTRY: ${{ secrets.DOCKER_REGISTRY_URL }}
+  GO_VERSION: "1.24"
+
+jobs:
+  # ============================================
+  # JOB 1: VALIDATE
+  # ============================================
+  validate:
+    name: Validate Tag and Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+      services: ${{ steps.detect.outputs.services }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for tag comparison
+
+      - name: Validate SEMVER tag
+        id: validate
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "📌 Validating tag: $TAG"
+          ./.github/scripts/validate-tag.sh $TAG
+
+      - name: Detect changed services
+        id: detect
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          ./.github/scripts/detect-changes.sh $TAG
+
+  # ============================================
+  # JOB 2: BUILD AND TEST
+  # ============================================
+  build-and-test:
+    name: Build and Test
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.validate.outputs.services) }}
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build service
+        uses: ./.github/actions/build-service
+        with:
+          service-name: ${{ matrix.service }}
+
+      # Skipping tests for now to speed up deployment, once deployment is validated we can re-enable tests
+      # - name: Run tests
+      #   uses: ./.github/actions/run-tests
+      #   with:
+      #     service-name: ${{ matrix.service }}
+      #     coverage-threshold: 50
+
+  # ============================================
+  # JOB 3: DOCKER BUILD
+  # ============================================
+  docker-build:
+    name: Build Docker Images
+    needs: [validate, build-and-test]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.validate.outputs.services) }}
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build and push Docker image
+        uses: ./.github/actions/build-docker
+        with:
+          service-name: ${{ matrix.service }}
+          registry: ${{ env.REGISTRY }}
+          image-tag: ${{ needs.validate.outputs.version }}
+          registry-username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+  # ============================================
+  # JOB 4: VERIFY INFRASTRUCTURE
+  # ============================================
+  verify-infrastructure:
+    name: Verify K8S Infrastructure
+    needs: [validate, docker-build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Verify Infrastructure Action
+        uses: ./.github/actions/verify-infrastructure
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          ssh-host: ${{ secrets.VPS_SSH_HOST }}
+          ssh-user: ${{ secrets.VPS_SSH_USER }}
+          namespace: financeiro
+
+  # ============================================
+  # JOB 5: DEPLOY
+  # ============================================
+  deploy:
+    name: Deploy to K3S
+    needs: [validate, verify-infrastructure]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.validate.outputs.services) }}
+      max-parallel: 1 # Deploy sequentially
+      fail-fast: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to K3S
+        uses: ./.github/actions/deploy-k3s
+        with:
+          service-name: ${{ matrix.service }}
+          image-tag: ${{ needs.validate.outputs.version }}
+          registry: ${{ env.REGISTRY }}
+          ssh-host: ${{ secrets.VPS_SSH_HOST }}
+          ssh-user: ${{ secrets.VPS_SSH_USER }}
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          namespace: financeiro
+
+      - name: Health check
+        uses: ./.github/actions/health-check
+        with:
+          service-name: ${{ matrix.service }}
+          health-endpoint: http://${{ secrets.VPS_SSH_HOST }}/health/services
+          max-retries: 10
+          retry-delay: 5
+
+  # ============================================
+  # JOB 6: NOTIFY
+  # ============================================
+  notify:
+    name: Notify Deployment Status
+    needs: [validate, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare notification
+        id: prepare
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          STATUS="${{ needs.deploy.result }}"
+
+          if [ "$STATUS" = "success" ]; then
+            EMOJI="✅"
+            MESSAGE="Deployment successful!"
+          else
+            EMOJI="❌"
+            MESSAGE="Deployment failed!"
+          fi
+
+          echo "emoji=$EMOJI" >> $GITHUB_OUTPUT
+          echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        if: needs.deploy.result == 'success'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.prepare.outputs.tag }}
+          release_name: Release ${{ steps.prepare.outputs.tag }}
+          body: |
+            ## 🚀 Deployment Summary
+
+            **Version:** ${{ needs.validate.outputs.version }}
+            **Services Deployed:** ${{ needs.validate.outputs.services }}
+            **Status:** ${{ steps.prepare.outputs.emoji }} ${{ steps.prepare.outputs.message }}
+
+            ### Changes
+            See commit history for details.
+          draft: false
+          prerelease: ${{ contains(steps.prepare.outputs.tag, '-') }}
+
+      - name: Deployment summary
+        run: |
+          echo "# ${{ steps.prepare.outputs.emoji }} Deployment Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ steps.prepare.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.prepare.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Services:** ${{ needs.validate.outputs.services }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,76 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: database-backup
+  namespace: financeiro
+spec:
+  # Execute every day at 2 AM
+  schedule: "0 2 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: postgres:15-alpine3.22
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+
+                  DATE=$(date +%Y%m%d_%H%M%S)
+                  BACKUP_DIR="/backups/$DATE"
+                  mkdir -p $BACKUP_DIR
+
+                  echo "🗄️  Starting database backups at $DATE"
+
+                  # Backup Users DB
+                  echo "Backing up users database..."
+                  PGPASSWORD=<DB_PASSWORD> pg_dump \
+                    -h postgres-users \
+                    -U <USERNAME> \
+                    -d <DATABASE_NAME> \
+                    -F c \
+                    -f $BACKUP_DIR/users.dump
+
+                  # Backup Auth DB
+                  echo "Backing up authentication database..."
+                  PGPASSWORD=<DB_PASSWORD> pg_dump \
+                    -h postgres-auth \
+                    -U <USERNAME> \
+                    -d <DATABASE_NAME> \
+                    -F c \
+                    -f $BACKUP_DIR/auth.dump
+
+                  # Backup Notification DB
+                  echo "Backing up notification database..."
+                  PGPASSWORD=<DB_PASSWORD> pg_dump \
+                    -h postgres-notification \
+                    -U <USERNAME> \
+                    -d <DATABASE_NAME> \
+                    -F c \
+                    -f $BACKUP_DIR/notification.dump
+
+                  # Compress backups
+                  echo "Compressing backups..."
+                  tar -czf /backups/backup-$DATE.tar.gz -C /backups $DATE
+
+                  # Clean up individual dumps
+                  rm -rf $BACKUP_DIR
+
+                  # Keep only last 3 days of backups
+                  find /backups -name "backup-*.tar.gz" -mtime +3 -delete
+
+                  echo "✅ Backup completed successfully!"
+                  ls -lh /backups/backup-$DATE.tar.gz
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backups
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: backup-pvc

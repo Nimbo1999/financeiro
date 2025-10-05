@@ -1,0 +1,69 @@
+name: "Run Tests"
+description: "Run tests with coverage report"
+
+inputs:
+  service-name:
+    description: "Name of the service to test"
+    required: true
+  coverage-threshold:
+    description: "Minimum coverage percentage required"
+    required: false
+    default: "40"
+
+outputs:
+  coverage-percentage:
+    description: "Coverage percentage achieved"
+    value: ${{ steps.test.outputs.coverage }}
+  tests-passed:
+    description: "Whether tests passed"
+    value: ${{ steps.test.outputs.passed }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run tests
+      id: test
+      shell: bash
+      working-directory: ${{ inputs.service-name }}
+      run: |
+        echo "🧪 Running tests for ${{ inputs.service-name }}..."
+
+        # Run tests with coverage
+        go test -v -race -coverprofile=coverage.out -covermode=atomic ./... 2>&1 | tee test-output.log
+
+        # Check if tests passed
+        if [ ${PIPESTATUS[0]} -eq 0 ]; then
+          echo "passed=true" >> $GITHUB_OUTPUT
+          echo "✅ All tests passed"
+        else
+          echo "passed=false" >> $GITHUB_OUTPUT
+          echo "❌ Tests failed"
+          exit 1
+        fi
+
+        # Calculate coverage
+        if [ -f coverage.out ]; then
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "📊 Coverage: $COVERAGE%"
+
+          # Check threshold
+          if (( $(echo "$COVERAGE < ${{ inputs.coverage-threshold }}" | bc -l) )); then
+            echo "❌ Coverage $COVERAGE% is below threshold ${{ inputs.coverage-threshold }}%"
+            exit 1
+          fi
+
+          # Generate HTML report
+          go tool cover -html=coverage.out -o coverage.html
+          echo "✅ Coverage meets threshold"
+        fi
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: coverage-${{ inputs.service-name }}
+        path: |
+          ${{ inputs.service-name }}/coverage.out
+          ${{ inputs.service-name }}/coverage.html
+        retention-days: 30
