@@ -1,0 +1,101 @@
+# Persistent Volumes for PostgreSQL databases
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-users-pv
+  labels:
+    type: local
+    app: postgres
+    database: users
+spec:
+  storageClassName: local-path
+  capacity:
+    storage: 3Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/postgres-users"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-auth-pv
+  labels:
+    type: local
+    app: postgres
+    database: authentication
+spec:
+  storageClassName: local-path
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/postgres-auth"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-notification-pv
+  labels:
+    type: local
+    app: postgres
+    database: notification
+spec:
+  storageClassName: local-path
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/postgres-notification"
+
+# Persistent Volume Claims
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-users-pvc
+  namespace: financeiro
+  labels:
+    app: postgres
+    database: users
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-auth-pvc
+  namespace: financeiro
+  labels:
+    app: postgres
+    database: authentication
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-notification-pvc
+  namespace: financeiro
+  labels:
+    app: postgres
+    database: notification
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

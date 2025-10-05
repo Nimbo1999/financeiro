@@ -24,6 +24,11 @@ spec:
           env:
             - name: HTTP_PORT
               value: "80"
+            - name: POSTGRES_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: notification-db-url
             - name: RABBITMQ_URL
               valueFrom:
                 secretKeyRef:

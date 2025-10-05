@@ -28,6 +28,8 @@ spec:
           value: "http://users"
         - name: AUTH_SERVICE_URL
           value: "http://authentication"
+        - name: NOTIFICATION_SERVICE_URL
+          value: "http://notification"
         - name: AUTH_SERVICE_GRPC_URL
           value: "authentication:50051"
         livenessProbe:
