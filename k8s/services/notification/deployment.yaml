@@ -34,6 +34,26 @@ spec:
                 secretKeyRef:
                   name: rabbitmq-secrets
                   key: url
+            - name: SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: email-secrets
+                  key: smtp_port
+            - name: SMTP_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: email-secrets
+                  key: smtp_from
+            - name: SMTP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: email-secrets
+                  key: smtp_username
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: email-secrets
+                  key: smtp_password
           livenessProbe:
             httpGet:
               path: /health
