@@ -191,11 +191,11 @@ type RSAKeys struct {
 
 // @TODO: for debug we are reading keys from files, but in production we should use a secure vault like AWS KMS or HashiCorp Vault
 func readRSAKeys() (*RSAKeys, error) {
-	privateKeyFile, err := os.ReadFile("/private_key.pem")
+	privateKeyFile, err := os.ReadFile("/etc/jwt-keys/private_key.pem")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read private key file: %w", err)
 	}
-	publicKeyFile, err := os.ReadFile("/public_key.pem")
+	publicKeyFile, err := os.ReadFile("/etc/jwt-keys/public_key.pem")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read public key file: %w", err)
 	}

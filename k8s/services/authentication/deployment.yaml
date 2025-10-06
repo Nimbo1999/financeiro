@@ -42,7 +42,7 @@ spec:
               value: "users:50051"
           volumeMounts:
             - name: jwt-keys
-              mountPath: /
+              mountPath: /etc/jwt-keys
               readOnly: true
           livenessProbe:
             httpGet:
