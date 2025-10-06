@@ -18,8 +18,9 @@ WORKDIR /app
 
 COPY --from=builder /app/bin/authentication-health-checker bin/authentication-health-checker
 COPY --from=builder /app/bin/authentication bin/authentication
-COPY --from=builder /app/private_key.pem /private_key.pem
-COPY --from=builder /app/public_key.pem /public_key.pem
+# These files are copied via k8s secrets mounted as volume
+# COPY --from=builder /app/private_key.pem /private_key.pem
+# COPY --from=builder /app/public_key.pem /public_key.pem
 COPY authentication/migrations ./migrations
 
 CMD [ "/app/bin/authentication" ]

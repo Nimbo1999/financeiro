@@ -1,0 +1,8 @@
+apiVersion: v1
+metadata:
+  name: rabbitmq-secrets
+  namespace: financeiro
+kind: Secret
+data:
+  private_key.pem: <PRIVATE_KEY_DATA>
+  public_key.pem: <PUBLIC_KEY_DATA>
