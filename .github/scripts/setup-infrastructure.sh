@@ -43,6 +43,27 @@ kubectl wait --for=condition=ready pod -l app=postgres,database=notification -n 
 echo "⏳ Waiting for RabbitMQ to be ready..."
 kubectl wait --for=condition=ready pod -l app=rabbitmq -n $NAMESPACE --timeout=300s
 
+echo "🔐 Setting up cert-manager for SSL certificates..."
+# Check if cert-manager is already installed
+if kubectl get namespace cert-manager &> /dev/null; then
+    echo "ℹ️  cert-manager namespace already exists, skipping installation"
+else
+    echo "📦 Installing cert-manager..."
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.2/cert-manager.yaml
+
+    echo "⏳ Waiting for cert-manager to be ready..."
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=300s
+fi
+
+echo "📜 Creating Let's Encrypt ClusterIssuers..."
+kubectl apply -f k8s/infrastructure/cluster-issuer-staging.yaml
+kubectl apply -f k8s/infrastructure/cluster-issuer-production.yaml
+
+echo "⏳ Waiting for ClusterIssuers to be ready..."
+sleep 5
+kubectl get clusterissuer letsencrypt-staging
+kubectl get clusterissuer letsencrypt-production
+
 echo "✅ Infrastructure setup completed!"
 
 echo ""
@@ -53,3 +74,13 @@ kubectl get svc -n $NAMESPACE -l 'app in (postgres,rabbitmq)'
 echo ""
 echo "🔗 Access URLs:"
 echo "  RabbitMQ Management: http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):30672"
+
+echo ""
+echo "📋 SSL Certificate Configuration:"
+echo "  ✓ cert-manager installed"
+echo "  ✓ ClusterIssuers created (staging & production)"
+echo ""
+echo "⚠️  Next steps for HTTPS:"
+echo "  1. Configure DNS A record for your domain pointing to VPS IP"
+echo "  2. Update k8s/services/gateway/service.yaml with your domain"
+echo "  3. Deploy gateway service to obtain SSL certificate"

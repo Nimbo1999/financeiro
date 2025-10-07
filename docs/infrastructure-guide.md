@@ -7,6 +7,8 @@ Infrastructure components:
 - **3 instances PostgreSQL** (users, authentication, notification)
 - **1 instance RabbitMQ** (with management UI)
 - **Persistent Volumes** for persistent data
+- **cert-manager** for automatic SSL certificate management
+- **Let's Encrypt ClusterIssuers** (staging and production)
 
 ## Architecture
 
@@ -59,6 +61,15 @@ Infrastructure components:
 - **PVC**: `rabbitmq-pvc` (5Gi)
 - **Image**: `rabbitmq:3-management-alpine`
 
+### cert-manager
+
+- **Namespace**: `cert-manager`
+- **Version**: `v1.18.2`
+- **Purpose**: Automatic SSL/TLS certificate management from Let's Encrypt
+- **ClusterIssuers**:
+  - `letsencrypt-staging`: For testing certificates (avoid rate limits)
+  - `letsencrypt-production`: For production certificates
+
 ## Utility commands
 
 ### Status verification
@@ -78,6 +89,18 @@ kubectl get pvc -n financeiro
 
 # Verify storage usage
 kubectl get pvc -n financeiro -o custom-columns=NAME:.metadata.name,CAPACITY:.spec.resources.requests.storage,USED:.status.capacity.storage
+
+# cert-manager status
+kubectl get pods -n cert-manager
+
+# ClusterIssuers status
+kubectl get clusterissuer
+
+# Certificate status
+kubectl get certificate -n financeiro
+
+# Check certificate details
+kubectl describe certificate <certificate-name> -n financeiro
 ```
 
 ### Logs
@@ -97,6 +120,12 @@ kubectl logs -f deployment/rabbitmq -n financeiro
 
 # Logs recentes (últimas 50 linhas)
 kubectl logs deployment/postgres-users -n financeiro --tail=50
+
+# cert-manager logs
+kubectl logs -n cert-manager -l app=cert-manager --tail=50
+
+# cert-manager logs (follow)
+kubectl logs -n cert-manager -l app=cert-manager -f
 ```
 
 ### Database access
@@ -222,6 +251,11 @@ kubectl rollout restart deployment/postgres-notification -n financeiro
 
 # Restart RabbitMQ
 kubectl rollout restart deployment/rabbitmq -n financeiro
+
+# Restart cert-manager
+kubectl rollout restart deployment/cert-manager -n cert-manager
+kubectl rollout restart deployment/cert-manager-webhook -n cert-manager
+kubectl rollout restart deployment/cert-manager-cainjector -n cert-manager
 ```
 
 ### Scaling Resources
@@ -281,6 +315,30 @@ kubectl exec deployment/rabbitmq -n financeiro -- \
 # Test connectivity
 kubectl run test-rabbitmq --image=curlimages/curl -i --rm --restart=Never -n financeiro -- \
   curl -u <USERNAME>:<PASSWORD> http://rabbitmq:15672/api/overview
+```
+
+### SSL Certificate not issuing
+
+```bash
+# Check certificate status
+kubectl describe certificate <certificate-name> -n financeiro
+
+# Check certificate request
+kubectl get certificaterequest -n financeiro
+kubectl describe certificaterequest <request-name> -n financeiro
+
+# Check ACME challenge
+kubectl get challenge -n financeiro
+kubectl describe challenge <challenge-name> -n financeiro
+
+# Check cert-manager logs
+kubectl logs -n cert-manager -l app=cert-manager --tail=100
+
+# Verify ClusterIssuer status
+kubectl describe clusterissuer letsencrypt-production
+
+# Test DNS resolution (from within cluster)
+kubectl run test-dns --image=busybox -i --rm --restart=Never -- nslookup <your-domain>
 ```
 
 ### Problems with Storage

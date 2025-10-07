@@ -6,6 +6,7 @@
 - GitHub Actions configured
 - Secrets configured in GitHub
 - SSH access to the VPS
+- (Optional) Domain name for HTTPS access
 
 ## Initial Deployment (First Time)
 
@@ -48,6 +49,28 @@ ssh <USERNAME>@<VPS_IP> "kubectl get pods -n financeiro"
 # Access services
 curl http://VPS-IP/health  # Gateway
 curl http://VPS-IP:30672   # RabbitMQ UI
+```
+
+### 4. SSL/HTTPS Configuration (Optional)
+
+To enable HTTPS access with a custom domain and automatic SSL certificates:
+
+1. **Configure DNS**: Add an A record pointing your domain to your VPS IP
+2. **Update Gateway Ingress**: Update `k8s/services/gateway/service.yaml` with your domain
+3. **Deploy SSL Configuration**: The infrastructure setup script already installed cert-manager and ClusterIssuers
+4. **Apply Gateway Changes**: Deploy the updated gateway service
+
+**Quick verification:**
+
+```bash
+# Check cert-manager is running
+kubectl get pods -n cert-manager
+
+# Check ClusterIssuers are ready
+kubectl get clusterissuer
+
+# After deploying gateway with TLS, check certificate
+kubectl get certificate -n financeiro
 ```
 
 ## Update Deployment

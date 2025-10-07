@@ -152,6 +152,8 @@ jobs:
     name: Notify Deployment Status
     needs: [validate, deploy]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: always()
 
     steps:

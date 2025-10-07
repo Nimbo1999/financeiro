@@ -26,11 +26,17 @@ metadata:
   name: gateway-ingress
   namespace: financeiro
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    # Request certificate from Let's Encrypt
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    # Enable TLS/SSL
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: financeiro-https-redirect@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
-  - http:
+  - host: <YOUR_DOMAIN_URL>  # Replace with your domain
+    http:
       paths:
       - path: /
         pathType: Prefix
@@ -40,7 +46,7 @@ spec:
             port:
               number: 80
   # To enable HTTPS, add a tls section like below and ensure the secret exists:
-  # tls:
-  # - hosts:
-  #     - your.domain.com
-  #   secretName: your-tls-secret
+  tls:
+  - hosts:
+      - <YOUR_DOMAIN_URL>
+    secretName: gateway-tls-cert
