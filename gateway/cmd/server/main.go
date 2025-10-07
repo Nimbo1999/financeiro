@@ -40,6 +40,7 @@ func main() {
 			log.Fatalf("Failed to start server: %v", err)
 		}
 	}()
+	log.Println("Deploy")
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)

@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nimbo1999/financeiro/notification/internal/config"
 	"github.com/nimbo1999/financeiro/notification/internal/consumers"
 	"github.com/nimbo1999/financeiro/notification/internal/handler"
@@ -24,12 +26,13 @@ type App struct {
 func NewApp(db *gorm.DB, consumer consumers.Consumer, cfg *config.Config) *App {
 	// Initialize HTTP server (health checks)
 	healthHandler := handler.NewHealthHandler()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthHandler.Health)
+	router := chi.NewRouter()
+	router.Use(middleware.Logger)
+	router.Get("/health", healthHandler.Health)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%s", cfg.HTTPPort),
-		Handler: mux,
+		Handler: router,
 	}
 
 	return &App{

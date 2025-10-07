@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -61,12 +62,12 @@ func (a *App) RunHTTP(port string) error {
 		Handler: mux,
 	}
 
-	fmt.Println("Starting HTTP server on port:", port)
+	log.Println("Starting HTTP server on port:", port)
 	return a.httpServer.ListenAndServe()
 }
 
 func (a *App) ShutdownHTTP(ctx context.Context) error {
-	fmt.Println("Shutting down HTTP server gracefully...")
+	log.Println("Shutting down HTTP server gracefully...")
 
 	shutdownCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -85,11 +86,11 @@ func (a *App) ShutdownHTTP(ctx context.Context) error {
 
 	select {
 	case <-done:
-		fmt.Println("All HTTP requests completed")
+		log.Println("All HTTP requests completed")
 	case <-shutdownCtx.Done():
-		fmt.Println("HTTP shutdown timeout reached, forcing exit")
+		log.Println("HTTP shutdown timeout reached, forcing exit")
 	}
 
-	fmt.Println("HTTP server shutdown complete")
+	log.Println("HTTP server shutdown complete")
 	return nil
 }
