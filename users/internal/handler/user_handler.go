@@ -28,12 +28,16 @@ func NewUserHandler(service services.UserService) *UserHandler {
 func (h *UserHandler) RegisterRoutes(router chi.Router) {
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
 	router.Get("/health", h.HealthCheck)
-	router.Get("/{id}", h.GetUserByID)
+	router.Get("/{id}", h.GetUserByIdOrEmail)
 	router.Get("/", h.ListUsers)
 	router.Post("/", h.CreateUser)
 }
 
-func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
+/*
+@todo: refactor this method to separate GetByID and GetByEmail
+it needs to identify if the param is an UUID or an email and threat it accordingly
+*/
+func (h *UserHandler) GetUserByIdOrEmail(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user, err := h.service.GetUserByID(id)
 	if err != nil {

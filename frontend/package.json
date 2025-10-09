@@ -1,0 +1,41 @@
+{
+  "name": "material-ui-react-router-ts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "react-router dev",
+    "start": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc"
+  },
+  "dependencies": {
+    "@emotion/cache": "11.14.0",
+    "@emotion/react": "11.14.0",
+    "@emotion/server": "11.11.0",
+    "@emotion/styled": "11.14.1",
+    "@mui/icons-material": "^7.3.4",
+    "@mui/material": "7.3.4",
+    "@react-router/node": "7.9.3",
+    "@react-router/serve": "7.9.3",
+    "composable-functions": "^5.0.0",
+    "isbot": "5.1.31",
+    "pino": "^10.0.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-hook-form": "^7.64.0",
+    "react-router": "7.9.3",
+    "remix-forms": "^3.1.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@react-router/dev": "7.9.3",
+    "@types/node": "24.7.0",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.1",
+    "typescript": "5.9.3",
+    "vite": "7.1.9",
+    "vite-plugin-devtools-json": "^1.0.0",
+    "vite-tsconfig-paths": "5.1.4"
+  },
+  "packageManager": "pnpm@10.18.1+sha512.77a884a165cbba2d8d1c19e3b4880eee6d2fcabd0d879121e282196b80042351d5eb3ca0935fa599da1dc51265cc68816ad2bddd2a2de5ea9fdf92adbec7cd34"
+}
