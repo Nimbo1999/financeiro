@@ -7,7 +7,7 @@ DB_PORT=15432
 POSTGRES_CONNECTION_STRING=postgres://matheus:dev1234@localhost:$(DB_PORT)/$(DB_NAME)
 RABBITMQ_URL=amqp://admin:admin123@localhost:5672
 
-PHONY: run build build-health-checker create-bin-dir generate-proto
+PHONY: run build build-health-checker create-bin-dir generate-proto unit-test
 
 run:
 	HTTP_PORT=$(HTTP_PORT) \
@@ -29,3 +29,8 @@ create-bin-dir:
 
 generate-proto:
 	./scripts/generate_proto.sh
+
+unit-test:
+	go test -v -cover ./internal/... -coverprofile=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
+	go tool cover -func=coverage.out | grep total | awk '{print "Total Coverage: " $$3}'

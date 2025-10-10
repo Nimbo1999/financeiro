@@ -8,7 +8,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nimbo1999/financeiro/users/internal/handler/dto"
+	"github.com/nimbo1999/financeiro/users/internal/models"
 	"github.com/nimbo1999/financeiro/users/internal/services"
+	"github.com/nimbo1999/financeiro/users/internal/utils"
 )
 
 type HTTPHandler interface {
@@ -39,7 +41,19 @@ it needs to identify if the param is an UUID or an email and threat it according
 */
 func (h *UserHandler) GetUserByIdOrEmail(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	user, err := h.service.GetUserByID(id)
+	var (
+		err  error
+		user *models.User
+	)
+
+	if utils.IsUUID(id) {
+		user, err = h.service.GetUserByID(id)
+	} else if utils.IsEmail(id) {
+		user, err = h.service.GetUserByEmail(id)
+	} else {
+		err = services.ErrInvalidUserData
+	}
+
 	if err != nil {
 		errorResponse := dto.ToErrorResponse(err)
 		w.WriteHeader(errorResponse.Status)

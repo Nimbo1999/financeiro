@@ -6,7 +6,7 @@ compose-up:
 compose-down:
 	docker-compose down -v
 
-compose-up-build:
+compose-up-build: compose-down
 	docker-compose up -d --build
 
 compose-logs:
