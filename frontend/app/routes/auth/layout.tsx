@@ -1,11 +1,9 @@
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Container,
-  IconButton,
-} from "@mui/material";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Container from "@mui/material/Container";
+import IconButton from "@mui/material/IconButton";
+import Typography from "@mui/material/Typography";
 import { Link, Outlet } from "react-router";
 
 import {
@@ -13,7 +11,7 @@ import {
   AccountBalanceWallet as WalletIcon,
 } from "@mui/icons-material";
 
-import type { Route } from "./+types/auth.layout";
+import type { Route } from "./+types/layout";
 
 // Authentication layout component
 export default function LoginPage({ matches }: Route.ComponentProps) {

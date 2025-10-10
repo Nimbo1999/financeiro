@@ -24,7 +24,7 @@ type GetUserResponse struct {
 }
 
 type ListUsersResponse struct {
-	Users      []GetUserResponse `json:"users"`
+	Data       []GetUserResponse `json:"data"`
 	Total      int64             `json:"total"`
 	Page       int               `json:"page"`
 	PageSize   int               `json:"page_size"`

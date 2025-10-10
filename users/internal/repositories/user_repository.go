@@ -10,6 +10,7 @@ type PaginationParams struct {
 	PageSize int
 	OrderBy  string
 	Sort     string
+	FullName string
 }
 
 type PaginatedResult struct {
@@ -86,7 +87,12 @@ func (r *userRepository) List(params *PaginationParams) (*PaginatedResult, error
 	var users []models.User
 	var total int64
 
-	err := r.db.Model(&models.User{}).Count(&total).Error
+	query := r.db.Model(&models.User{})
+	if params.FullName != "" {
+		query = query.Where("full_name ILIKE ?", "%"+params.FullName+"%")
+	}
+
+	err := query.Count(&total).Error
 	if err != nil {
 		return nil, err
 	}

@@ -1,10 +1,8 @@
-import {
-  TextField,
-  Grid,
-  Box,
-  LinearProgress,
-  Typography,
-} from "@mui/material";
+import TextField from "@mui/material/TextField";
+import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
+import LinearProgress from "@mui/material/LinearProgress";
+import Typography from "@mui/material/Typography";
 import { SchemaForm, performMutation } from "remix-forms";
 import { data, redirect, useActionData } from "react-router";
 import { applySchema } from "composable-functions";
@@ -73,15 +71,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
 export default function LoginCodeComponent() {
   const { email } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  console.log(actionData);
-
   const formatServerError = (v: string) => {
     const response = JSON.parse(v);
     return [response.error.message, response.error.details]
       .filter(Boolean)
       .join(": ");
   };
-
   return (
     <SchemaForm
       schema={loginCodeSchema}

@@ -5,8 +5,11 @@ import MUIAppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Avatar from "@mui/material/Avatar";
+import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 
 import { Menu as MenuIcon } from "@mui/icons-material";
+import { useLocation } from "react-router";
+import { useMemo } from "react";
 
 export interface AppBarProps {
   drawerWidth: number;
@@ -30,6 +33,29 @@ export function AppBar({
   email,
   fullName,
 }: Readonly<AppBarProps>) {
+  const { pathname } = useLocation();
+
+  const avatarInitials = useMemo(() => {
+    return fullName
+      ?.split(" ")
+      .map((n, i, arr) => (i === 0 || i === arr.length - 1 ? n[0] : ""))
+      .filter(Boolean)
+      .join("")
+      .toUpperCase();
+  }, [fullName]);
+
+  const appBarTitle = useMemo(
+    () =>
+      ({
+        "/": "Dashboard",
+        "/transactions": "Transactions",
+        "/upload": "Upload CSV",
+        "/users": "Users",
+        "/settings": "Settings",
+      }[pathname] ?? "Finance Tracker"),
+    [pathname]
+  );
+
   return (
     <MUIAppBar
       position="fixed"
@@ -57,7 +83,7 @@ export function AppBar({
           component="div"
           sx={{ flexGrow: 1, fontWeight: 600 }}
         >
-          Dashboard
+          {appBarTitle}
         </Typography>
 
         <Stack direction="row" spacing={2} alignItems="center">
@@ -78,9 +104,10 @@ export function AppBar({
             sx={{
               background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
               fontWeight: 700,
+              color: "white",
             }}
           >
-            ML
+            {avatarInitials ?? <AccountCircleRoundedIcon color="inherit" />}
           </Avatar>
         </Stack>
       </Toolbar>

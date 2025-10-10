@@ -8,15 +8,14 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import {
-  Dashboard as DashboardIcon,
-  AccountBalanceWallet as WalletIcon,
-  TrendingUp as TrendingUpIcon,
-  Settings as SettingsIcon,
-  Logout as LogoutIcon,
-  Upload as UploadIcon,
-  Assessment as AssessmentIcon,
-} from "@mui/icons-material";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import WalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import SettingsIcon from "@mui/icons-material/Settings";
+import LogoutIcon from "@mui/icons-material/Logout";
+import UploadIcon from "@mui/icons-material/Upload";
+import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import { styled } from "@mui/material";
+import { NavLink } from "react-router";
 
 export interface SidebarProps {
   drawerWidth: number;
@@ -24,17 +23,42 @@ export interface SidebarProps {
   handleDrawerToggle: VoidFunction;
 }
 
+const Styled = {
+  ListItemButton: styled(ListItemButton)`
+    border-radius: ${({ theme }) => theme.spacing(2)};
+
+    .nav-text > span {
+      font-weight: 400;
+    }
+
+    &.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+
+      &:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4391 100%);
+      }
+
+      .icon {
+        color: white;
+      }
+      .nav-text > span {
+        font-weight: 600;
+      }
+    }
+  `,
+};
+
 export function Sidebar({
   drawerWidth,
   mobileOpen,
   handleDrawerToggle,
 }: Readonly<SidebarProps>) {
   const menuItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, active: true },
-    { text: "Transactions", icon: <WalletIcon />, active: false },
-    { text: "Analytics", icon: <TrendingUpIcon />, active: false },
-    { text: "Reports", icon: <AssessmentIcon />, active: false },
-    { text: "Upload CSV", icon: <UploadIcon />, active: false },
+    { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
+    { text: "Transactions", icon: <WalletIcon />, path: "/transactions" },
+    { text: "Upload CSV", icon: <UploadIcon />, path: "/upload" },
+    { text: "Users", icon: <PeopleAltIcon />, path: "/users" },
   ];
 
   const drawer = (
@@ -78,30 +102,11 @@ export function Sidebar({
       <List sx={{ flexGrow: 1, px: 2, py: 2 }}>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
-            <ListItemButton
-              sx={{
-                borderRadius: 2,
-                ...(item.active && {
-                  background:
-                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "white",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #5a6fd8 0%, #6a4391 100%)",
-                  },
-                }),
-              }}
-            >
-              <ListItemIcon
-                sx={{ color: item.active ? "white" : "text.secondary" }}
-              >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.text}
-                primaryTypographyProps={{ fontWeight: item.active ? 600 : 400 }}
-              />
-            </ListItemButton>
+            {/* @ts-ignore */}
+            <Styled.ListItemButton component={NavLink} to={item.path}>
+              <ListItemIcon className="icon">{item.icon}</ListItemIcon>
+              <ListItemText primary={item.text} className="nav-text" />
+            </Styled.ListItemButton>
           </ListItem>
         ))}
       </List>
@@ -111,20 +116,23 @@ export function Sidebar({
       {/* User Section */}
       <Box sx={{ p: 2 }}>
         <ListItem disablePadding>
-          <ListItemButton sx={{ borderRadius: 2 }}>
+          {/* @ts-ignore */}
+          <Styled.ListItemButton component={NavLink} to="/settings">
             <ListItemIcon>
               <SettingsIcon />
             </ListItemIcon>
             <ListItemText primary="Settings" />
-          </ListItemButton>
+          </Styled.ListItemButton>
         </ListItem>
+
         <ListItem disablePadding sx={{ mt: 1 }}>
-          <ListItemButton sx={{ borderRadius: 2 }} onClick={() => {}}>
+          {/* @ts-ignore */}
+          <Styled.ListItemButton onClick={() => {}}>
             <ListItemIcon>
               <LogoutIcon />
             </ListItemIcon>
             <ListItemText primary="Logout" />
-          </ListItemButton>
+          </Styled.ListItemButton>
         </ListItem>
       </Box>
     </Box>

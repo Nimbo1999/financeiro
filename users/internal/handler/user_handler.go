@@ -87,6 +87,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		PageSize: intPageSize,
 		OrderBy:  query.Get("order_by"),
 		Sort:     query.Get("sort"),
+		FullName: query.Get("full_name"),
 	}
 
 	result, err := h.service.ListUsers(paginationParms)
@@ -109,7 +110,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(dto.ListUsersResponse{
-		Users:      users,
+		Data:       users,
 		Total:      result.Total,
 		Page:       result.Page,
 		PageSize:   result.PageSize,

@@ -1,5 +1,9 @@
 export interface HttpClient {
-  get<T>(url: string, options?: RequestInit): Promise<T>;
+  get<T>(
+    url: string,
+    params?: URLSearchParams,
+    options?: RequestInit
+  ): Promise<T>;
   post<T, Body = unknown>(
     url: string,
     body?: Body,
@@ -25,12 +29,21 @@ export class FetchClient implements HttpClient {
     this.baseURL = baseURL;
   }
 
-  async get<T>(url: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${this.baseURL}${url}`, {
-      ...options,
-      method: "GET",
-      headers: this.getHeaders(options),
-    });
+  async get<T>(
+    url: string,
+    params?: URLSearchParams,
+    options?: RequestInit
+  ): Promise<T> {
+    const response = await fetch(
+      `${this.baseURL}${url}${
+        typeof params !== "undefined" ? `?${params.toString()}` : ""
+      }`,
+      {
+        ...options,
+        method: "GET",
+        headers: this.getHeaders(options),
+      }
+    );
 
     return this.handleResponse<T>(response);
   }

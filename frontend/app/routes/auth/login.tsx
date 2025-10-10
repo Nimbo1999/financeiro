@@ -1,10 +1,8 @@
-import {
-  TextField,
-  Grid,
-  LinearProgress,
-  Box,
-  Typography,
-} from "@mui/material";
+import TextField from "@mui/material/TextField";
+import Grid from "@mui/material/Grid";
+import LinearProgress from "@mui/material/LinearProgress";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import { formAction, SchemaForm } from "remix-forms";
 import { applySchema } from "composable-functions";
 import { loginSchema } from "~/forms/login";
