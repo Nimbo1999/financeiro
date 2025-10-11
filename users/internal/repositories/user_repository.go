@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"fmt"
+
 	"github.com/nimbo1999/financeiro/users/internal/models"
 	"gorm.io/gorm"
 )
@@ -89,7 +91,7 @@ func (r *userRepository) List(params *PaginationParams) (*PaginatedResult, error
 
 	query := r.db.Model(&models.User{})
 	if params.FullName != "" {
-		query = query.Where("full_name ILIKE ?", "%"+params.FullName+"%")
+		query = query.Where("full_name ILIKE ?", fmt.Sprintf("%%%s%%", params.FullName))
 	}
 
 	err := query.Count(&total).Error
@@ -99,7 +101,7 @@ func (r *userRepository) List(params *PaginationParams) (*PaginatedResult, error
 
 	offset := (params.Page - 1) * params.PageSize
 	orderClause := params.OrderBy + " " + params.Sort
-	err = r.db.Order(orderClause).
+	err = query.Order(orderClause).
 		Offset(offset).
 		Limit(params.PageSize).
 		Find(&users).Error
