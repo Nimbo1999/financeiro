@@ -1,9 +1,12 @@
-PHONY: compose-up compose-down compose-up-build compose-logs psql-auth psql-user psql-notification
+PHONY: compose-up compose-down compose-down-volumes compose-up-build compose-logs psql-auth psql-user psql-notification
 
 compose-up:
 	docker-compose up -d
 
 compose-down:
+	docker-compose down
+
+compose-down-volumes:
 	docker-compose down -v
 
 compose-up-build: compose-down
