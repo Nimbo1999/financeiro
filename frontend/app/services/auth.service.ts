@@ -1,11 +1,15 @@
 import { FetchClient, type HttpClient } from "~/clients/http";
-import type { CodeResponse, LoginResponse } from "~/models/auth";
+import type {
+  CodeResponse,
+  LoginResponse,
+  RefreshTokenResponse,
+} from "~/models/auth";
 import { env } from "~/environment";
 
 export interface AuthService {
   requestCode(email: string): Promise<CodeResponse["data"]>;
   login(email: string, code: string): Promise<LoginResponse["data"]>;
-  refreshToken(refreshToken: string): Promise<LoginResponse["data"]>;
+  refreshToken(refreshToken: string): Promise<RefreshTokenResponse["data"]>;
 }
 
 export class FinanceiroAuthService implements AuthService {
@@ -36,8 +40,10 @@ export class FinanceiroAuthService implements AuthService {
     return response.data;
   }
 
-  async refreshToken(refreshToken: string): Promise<LoginResponse["data"]> {
-    const response = await this.httpClient.post<LoginResponse>(
+  async refreshToken(
+    refreshToken: string
+  ): Promise<RefreshTokenResponse["data"]> {
+    const response = await this.httpClient.post<RefreshTokenResponse>(
       "/auth/refresh",
       {
         refresh_token: refreshToken,

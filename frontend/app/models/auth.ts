@@ -1,10 +1,12 @@
+interface TokenData {
+  access_token: string;
+  refresh_token: string;
+}
+
 interface AuthenticationData {
   user_id: string;
   email: string;
-  tokens: {
-    access_token: string;
-    refresh_token: string;
-  };
+  tokens: TokenData;
   is_new_user: boolean;
   authenticated_at: string;
 }
@@ -13,6 +15,10 @@ interface CodeData {
   code_id: string;
   expires_at: string;
   message: string;
+}
+
+interface RefreshTokenData {
+  tokens: TokenData;
 }
 
 interface AuthenticationResponse {
@@ -26,4 +32,8 @@ export interface LoginResponse extends AuthenticationResponse {
 
 export interface CodeResponse extends AuthenticationResponse {
   data: CodeData;
+}
+
+export interface RefreshTokenResponse extends AuthenticationResponse {
+  data: RefreshTokenData;
 }

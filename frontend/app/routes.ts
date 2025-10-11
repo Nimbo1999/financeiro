@@ -17,5 +17,6 @@ export default [
   layout("routes/auth/layout.tsx", [
     route("login", "routes/auth/login.tsx"),
     route("code", "routes/auth/code.tsx"),
+    route("refresh", "routes/auth/refresh.tsx"),
   ]),
 ] satisfies RouteConfig;

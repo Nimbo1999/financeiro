@@ -4,18 +4,16 @@ import CardContent from "@mui/material/CardContent";
 import Container from "@mui/material/Container";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
-import { Link, Outlet } from "react-router";
+import { Link, Outlet, useLocation } from "react-router";
 
 import {
   ArrowBack,
   AccountBalanceWallet as WalletIcon,
 } from "@mui/icons-material";
 
-import type { Route } from "./+types/layout";
-
 // Authentication layout component
-export default function LoginPage({ matches }: Route.ComponentProps) {
-  const isLoginRoute = matches.some((match) => match?.pathname === "/login");
+export default function LoginPage() {
+  const { pathname } = useLocation();
   return (
     <Box
       sx={{
@@ -72,7 +70,7 @@ export default function LoginPage({ matches }: Route.ComponentProps) {
               position: "relative",
             }}
           >
-            {isLoginRoute ? null : (
+            {pathname === "/code" ? (
               <IconButton
                 sx={{ position: "absolute", top: 16, left: 16 }}
                 component={Link}
@@ -80,7 +78,7 @@ export default function LoginPage({ matches }: Route.ComponentProps) {
               >
                 <ArrowBack />
               </IconButton>
-            )}
+            ) : null}
             <Box
               sx={{
                 display: "inline-block",
@@ -96,16 +94,22 @@ export default function LoginPage({ matches }: Route.ComponentProps) {
               <WalletIcon sx={{ fontSize: 44, color: "#667eea" }} />
             </Box>
             <Typography variant="h4" color="white" fontWeight={700}>
-              Bem vindo de volta!
+              {{
+                "/login": "Bem vindo de volta!",
+                "/code": "Bem vindo de volta!",
+                "/refresh": "Aguarde",
+              }[pathname] ?? "Gerencie suas finanças com facilidade"}
             </Typography>
             <Typography
               variant="body1"
               color="rgba(255,255,255,0.9)"
               sx={{ mt: 1 }}
             >
-              {isLoginRoute
-                ? "Faça login para acessar seu painel financeiro"
-                : "Por favor, insira o código enviado para seu email."}
+              {{
+                "/login": "Faça login para acessar seu painel financeiro",
+                "/code": "Por favor, insira o código enviado para seu email.",
+                "/refresh": "Renovando sua sessão...",
+              }[pathname] ?? "Gerencie suas finanças com facilidade"}
             </Typography>
           </Box>
 

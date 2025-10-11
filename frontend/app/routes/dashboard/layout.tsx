@@ -9,6 +9,7 @@ import { FetchClient } from "~/clients/http";
 import { env } from "~/environment";
 
 import type { Route } from "./+types/layout";
+import { LayoutError } from "~/components/layout-error";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { email, accessToken } = await getCurrentSession(
@@ -31,15 +32,7 @@ export default function Home() {
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <Await
-        resolve={userPromise}
-        /**
-         * @todo handle error properly (e.g., if token expired, redirect to refresh token)
-         * We should create a separated Error component for this, so that we can use the
-         * `useAsyncError` hook to get the error details.
-         */
-        errorElement={<p>Error loading user data</p>}
-      >
+      <Await resolve={userPromise} errorElement={<LayoutError />}>
         {(user) => (
           <Box sx={{ display: "flex", minHeight: "100vh" }}>
             <AppBar
