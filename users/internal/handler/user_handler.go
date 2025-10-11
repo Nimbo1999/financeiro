@@ -30,7 +30,8 @@ func NewUserHandler(service services.UserService) *UserHandler {
 func (h *UserHandler) RegisterRoutes(router chi.Router) {
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
 	router.Get("/health", h.HealthCheck)
-	router.Get("/{id}", h.GetUserByIdOrEmail)
+	router.Patch("/{email}/change-admin-state", h.ChangeAdminState)
+	router.Get("/{email}", h.GetUserByIdOrEmail)
 	router.Get("/", h.ListUsers)
 	router.Post("/", h.CreateUser)
 }
@@ -40,7 +41,7 @@ func (h *UserHandler) RegisterRoutes(router chi.Router) {
 it needs to identify if the param is an UUID or an email and threat it accordingly
 */
 func (h *UserHandler) GetUserByIdOrEmail(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
+	id := chi.URLParam(r, "email")
 	var (
 		err  error
 		user *models.User
@@ -116,6 +117,17 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		PageSize:   result.PageSize,
 		TotalPages: result.TotalPages,
 	})
+}
+
+func (h *UserHandler) ChangeAdminState(w http.ResponseWriter, r *http.Request) {
+	email := chi.URLParam(r, "email")
+	if err := h.service.ChangeAdminState(email); err != nil {
+		errorResponse := dto.ToErrorResponse(err)
+		w.WriteHeader(errorResponse.Status)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {

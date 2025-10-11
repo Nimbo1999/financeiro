@@ -21,6 +21,7 @@ func ModelToProto(user *models.User) *userpb.User {
 		Id:       user.ID,
 		Email:    user.Email,
 		FullName: user.FullName,
+		IsAdmin:  user.IsAdmin,
 	}
 
 	// Handle timestamps with proper null checking
@@ -45,6 +46,7 @@ func ProtoToModel(protoUser *userpb.User) *models.User {
 		ID:       protoUser.Id,
 		Email:    protoUser.Email,
 		FullName: protoUser.FullName,
+		IsAdmin:  protoUser.IsAdmin,
 	}
 
 	// Handle timestamp conversions with null checking

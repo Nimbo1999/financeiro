@@ -12,6 +12,7 @@ type CreateUserResponse struct {
 	FullName  string `json:"full_name"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
+	IsAdmin   bool   `json:"is_admin"`
 }
 
 type GetUserResponse struct {
@@ -21,6 +22,7 @@ type GetUserResponse struct {
 	CreatedAt string  `json:"created_at"`
 	UpdatedAt string  `json:"updated_at"`
 	DeletedAt *string `json:"deleted_at,omitempty"`
+	IsAdmin   bool    `json:"is_admin"`
 }
 
 type ListUsersResponse struct {

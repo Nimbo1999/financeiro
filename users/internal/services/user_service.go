@@ -38,6 +38,7 @@ type UserService interface {
 	UpdateUser(req *UpdateUserRequest) (*models.User, error)
 	ListUsers(params *repositories.PaginationParams) (*repositories.PaginatedResult, error)
 	DeleteUser(id string) error
+	ChangeAdminState(email string) error
 }
 
 type userService struct {
@@ -173,4 +174,17 @@ func (s *userService) DeleteUser(id string) error {
 	}
 
 	return s.userRepo.Delete(id)
+}
+
+func (s *userService) ChangeAdminState(email string) error {
+	if email == "" {
+		return ErrInvalidUserData
+	}
+
+	err := s.userRepo.ChangeAdminState(email)
+	if err != nil {
+		return ErrUserNotFound
+	}
+
+	return nil
 }

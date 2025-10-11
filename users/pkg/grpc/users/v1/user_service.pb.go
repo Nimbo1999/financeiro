@@ -82,6 +82,7 @@ type User struct {
 	FullName      string                 `protobuf:"bytes,3,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	IsAdmin       bool                   `protobuf:"varint,6,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -149,6 +150,13 @@ func (x *User) GetUpdatedAt() *timestamppb.Timestamp {
 		return x.UpdatedAt
 	}
 	return nil
+}
+
+func (x *User) GetIsAdmin() bool {
+	if x != nil {
+		return x.IsAdmin
+	}
+	return false
 }
 
 // GetUserByEmail request and response
@@ -438,7 +446,7 @@ var File_proto_users_v1_user_service_proto protoreflect.FileDescriptor
 
 const file_proto_users_v1_user_service_proto_rawDesc = "" +
 	"\n" +
-	"!proto/users/v1/user_service.proto\x12\busers.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbf\x01\n" +
+	"!proto/users/v1/user_service.proto\x12\busers.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xda\x01\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1b\n" +
@@ -446,7 +454,8 @@ const file_proto_users_v1_user_service_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"-\n" +
+	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x19\n" +
+	"\bis_admin\x18\x06 \x01(\bR\aisAdmin\"-\n" +
 	"\x15GetUserByEmailRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"R\n" +
 	"\x16GetUserByEmailResponse\x12\"\n" +

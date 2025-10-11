@@ -30,6 +30,7 @@ type UserRepository interface {
 	Update(user *models.User) error
 	Delete(id string) error
 	List(params *PaginationParams) (*PaginatedResult, error)
+	ChangeAdminState(email string) error
 }
 
 type userRepository struct {
@@ -126,4 +127,14 @@ func (r *userRepository) Update(user *models.User) error {
 
 func (r *userRepository) Delete(id string) error {
 	return r.db.Where("id = ?", id).Delete(&models.User{}).Error
+}
+
+func (r *userRepository) ChangeAdminState(email string) error {
+	var user models.User
+	err := r.db.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return err
+	}
+	user.IsAdmin = !user.IsAdmin
+	return r.db.Save(&user).Error
 }

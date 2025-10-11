@@ -7,4 +7,5 @@ type User struct {
 	ID       string
 	Email    string
 	FullName string
+	IsAdmin  bool `gorm:"default:false"`
 }
