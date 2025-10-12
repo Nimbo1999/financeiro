@@ -1,12 +1,32 @@
 import { CircularProgress } from "@mui/material";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { createPath, Navigate, useAsyncError, useLocation } from "react-router";
+import {
+  createPath,
+  useAsyncError,
+  useLocation,
+  useNavigate,
+} from "react-router";
+import { useEffect } from "react";
 
 export function LayoutError() {
   const error = useAsyncError();
   const location = useLocation();
+  const navigate = useNavigate();
   const returnPath = createPath(location);
+
+  useEffect(() => {
+    if (error instanceof Error && error.message.includes("401")) {
+      const timer = setTimeout(() => {
+        navigate({
+          pathname: "/refresh",
+          search: new URLSearchParams({ returnPath }).toString(),
+        });
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [error, navigate, returnPath]);
 
   return (
     <Box
@@ -23,15 +43,7 @@ export function LayoutError() {
       }}
     >
       {error instanceof Error && error.message.includes("401") ? (
-        <>
-          <Navigate
-            to={{
-              pathname: "/refresh",
-              search: new URLSearchParams({ returnPath }).toString(),
-            }}
-          />
-          <CircularProgress size="6rem" thickness={4.5} />
-        </>
+        <CircularProgress size="6rem" thickness={4.5} />
       ) : (
         <>
           <Typography variant="h3" color="text.secondary">
