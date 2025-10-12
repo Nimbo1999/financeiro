@@ -96,7 +96,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          node-version: 10.18.1
+          version: 10.18.1
         if: ${{ matrix.service == 'frontend' }}
       - name: Setup Node JS
         uses: actions/setup-node@v5

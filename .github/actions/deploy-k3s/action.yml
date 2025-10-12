@@ -54,18 +54,28 @@ runs:
         ssh -i ~/.ssh/deploy_key ${{ inputs.ssh-user }}@${{ inputs.ssh-host }} << EOF
           set -e
 
+          # Check current deployment status
+          echo "📊 Current deployment status:"
+          kubectl get deployment/${{ inputs.service-name }} -n ${{ inputs.namespace }} || echo "Deployment not found"
+
           # Update image in deployment
+          echo "🔄 Updating deployment image..."
           kubectl set image deployment/${{ inputs.service-name }} \
             ${{ inputs.service-name }}=$IMAGE \
             -n ${{ inputs.namespace }}
 
-          # Wait for rollout
+          # Delete old pods to force new pods creation
+          echo "🧹 Deleting old pods to force new pods creation..."
+          kubectl delete pods -n ${{ inputs.namespace }} -l app=${{ inputs.service-name }}
+
+          # Wait for rollout with extended timeout
           echo "⏳ Waiting for rollout to complete..."
           kubectl rollout status deployment/${{ inputs.service-name }} \
             -n ${{ inputs.namespace }} \
-            --timeout=5m
+            --timeout=1m
 
-          # Check pod status
+          # Final pod status check
+          echo "✅ Final pod status:"
           kubectl get pods -n ${{ inputs.namespace }} -l app=${{ inputs.service-name }}
         EOF
 
