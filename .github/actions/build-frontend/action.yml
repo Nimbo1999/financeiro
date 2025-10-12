@@ -1,0 +1,35 @@
+name: "Build Frontend"
+description: "Build a frontend application"
+
+inputs:
+  service-name:
+    description: "Name of the application to build"
+    required: true
+
+outputs:
+  frontend-build-path:
+    description: "Full path to the built folder"
+    value: ${{ steps.build.outputs.frontend-build-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download dependencies
+      shell: bash
+      working-directory: ${{ inputs.service-name }}
+      run: |
+        echo "📦 Downloading dependencies for ${{ inputs.service-name }}..."
+        pnpm install
+
+    - name: Build frontend
+      id: build
+      shell: bash
+      working-directory: ${{ inputs.service-name }}
+      run: |
+        echo "🔨 Building ${{ inputs.service-name }}..."
+        CI=true pnpm build
+
+        FRONTEND_BUILD_PATH="${{ inputs.service-name }}/build"
+        echo "frontend-build-path=$FRONTEND_BUILD_PATH" >> $GITHUB_OUTPUT
+        echo "✅ Build completed: $FRONTEND_BUILD_PATH"
+        ls -lh $FRONTEND_BUILD_PATH

@@ -46,6 +46,7 @@ export default function Home() {
               drawerWidth={drawerWidth}
               mobileOpen={mobileOpen}
               handleDrawerToggle={handleDrawerToggle}
+              isAdmin={user.is_admin}
             />
 
             <Box

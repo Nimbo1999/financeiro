@@ -14,4 +14,7 @@ export default defineConfig({
     },
     noExternal: ["@emotion/*", "@mui/*"],
   },
+  server: {
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
+  },
 });

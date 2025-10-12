@@ -3,7 +3,7 @@
 set -e
 
 CURRENT_TAG=$1
-SERVICES=("gateway" "users" "authentication" "notification")
+SERVICES=("gateway" "users" "authentication" "notification" "frontend")
 
 # Find the previous tag
 PREVIOUS_TAG=$(git describe --tags --abbrev=0 "$CURRENT_TAG^" 2>/dev/null || echo "")

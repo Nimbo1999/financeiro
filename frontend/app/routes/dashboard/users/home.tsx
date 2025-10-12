@@ -13,6 +13,8 @@ import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
 import SearchIcon from "@mui/icons-material/Search";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { useSearchParams, createSearchParams, Await, Link } from "react-router";
@@ -26,7 +28,6 @@ import { FinanceiroUserService } from "~/services/user.service";
 import { FetchClient } from "~/clients/http";
 import { env } from "~/environment";
 import type { ListReponse } from "~/models/common";
-import { Button } from "@mui/material";
 
 function getSearchParams(searchParams: URLSearchParams): URLSearchParams {
   const params = createSearchParams(searchParams);
@@ -228,7 +229,12 @@ function UsersTable({ users, searchParams }: UsersTableProps) {
               ) : (
                 users.data.map((user) => (
                   <TableRow key={user.id} hover>
-                    <TableCell>{user.full_name}</TableCell>
+                    <TableCell>
+                      {user.full_name}{" "}
+                      {user.is_admin ? (
+                        <Chip label="Admin" color="primary" size="small" />
+                      ) : null}
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{formatDate(user.created_at)}</TableCell>
                     <TableCell>{formatDate(user.updated_at)}</TableCell>

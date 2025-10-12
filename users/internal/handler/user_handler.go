@@ -75,6 +75,7 @@ func (h *UserHandler) GetUserByIdOrEmail(w http.ResponseWriter, r *http.Request)
 		CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		DeletedAt: deletedAt,
+		IsAdmin:   user.IsAdmin,
 	})
 }
 
@@ -107,6 +108,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 			FullName:  user.FullName,
 			CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 			UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			IsAdmin:   user.IsAdmin,
 		}
 	}
 
@@ -152,6 +154,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		FullName:  user.FullName,
 		CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		IsAdmin:   user.IsAdmin,
 	})
 }
 

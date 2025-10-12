@@ -21,6 +21,7 @@ export interface SidebarProps {
   drawerWidth: number;
   mobileOpen: boolean;
   handleDrawerToggle: VoidFunction;
+  isAdmin?: boolean;
 }
 
 const Styled = {
@@ -53,13 +54,18 @@ export function Sidebar({
   drawerWidth,
   mobileOpen,
   handleDrawerToggle,
+  isAdmin = false,
 }: Readonly<SidebarProps>) {
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
     { text: "Transactions", icon: <WalletIcon />, path: "/transactions" },
     { text: "Upload CSV", icon: <UploadIcon />, path: "/upload" },
-    { text: "Users", icon: <PeopleAltIcon />, path: "/users" },
-  ];
+    isAdmin ? { text: "Users", icon: <PeopleAltIcon />, path: "/users" } : null,
+  ].filter(Boolean) as {
+    text: string;
+    icon: React.ReactElement;
+    path: string;
+  }[];
 
   const drawer = (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>

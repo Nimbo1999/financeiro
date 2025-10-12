@@ -8,8 +8,9 @@ import Avatar from "@mui/material/Avatar";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 
 import { Menu as MenuIcon } from "@mui/icons-material";
-import { useLocation } from "react-router";
+import { useLocation, useNavigation } from "react-router";
 import { useMemo } from "react";
+import { LinearProgress } from "@mui/material";
 
 export interface AppBarProps {
   drawerWidth: number;
@@ -34,6 +35,7 @@ export function AppBar({
   fullName,
 }: Readonly<AppBarProps>) {
   const { pathname } = useLocation();
+  const { state } = useNavigation();
 
   const avatarInitials = useMemo(() => {
     return fullName
@@ -111,6 +113,8 @@ export function AppBar({
           </Avatar>
         </Stack>
       </Toolbar>
+
+      {state !== "idle" ? <LinearProgress variant="indeterminate" /> : null}
     </MUIAppBar>
   );
 }

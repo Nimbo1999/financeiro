@@ -23,4 +23,6 @@ export default [
     route("code", "routes/auth/code.tsx"),
     route("refresh", "routes/auth/refresh.tsx"),
   ]),
+
+  route("health", "routes/api/health.ts"),
 ] satisfies RouteConfig;

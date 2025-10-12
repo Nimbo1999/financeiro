@@ -40,16 +40,17 @@ jobs:
           ./.github/scripts/detect-changes.sh $TAG
 
   # ============================================
-  # JOB 2: BUILD AND TEST
+  # JOB 2: BUILD SERVICES
   # ============================================
-  build-and-test:
-    name: Build and Test
+  build-backend-service:
+    name: Build backend services
     needs: validate
     runs-on: ubuntu-latest
     strategy:
       matrix:
         service: ${{ fromJson(needs.validate.outputs.services) }}
       fail-fast: false
+    if: ${{ matrix.service != 'frontend' }}
 
     steps:
       - name: Checkout code
@@ -71,6 +72,36 @@ jobs:
       #   with:
       #     service-name: ${{ matrix.service }}
       #     coverage-threshold: 50
+
+  # ============================================
+  # JOB 2: BUILD Frontend
+  # ============================================
+  build-frontend:
+    name: Build Frontend
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.validate.outputs.services) }}
+      fail-fast: false
+    if: ${{ matrix.service == 'frontend' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          node-version: 10.18.1
+      - name: Setup Node JS
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          service-name: ${{ matrix.service }}
 
   # ============================================
   # JOB 3: DOCKER BUILD
