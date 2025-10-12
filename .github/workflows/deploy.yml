@@ -50,21 +50,24 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.validate.outputs.services) }}
       fail-fast: false
-    if: ${{ matrix.service != 'frontend' }}
+    if: ${{ !contains(fromJson(needs.validate.outputs.services), 'frontend') || (contains(fromJson(needs.validate.outputs.services), 'frontend') && fromJson(needs.validate.outputs.services)[0] != 'frontend') }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        if: ${{ matrix.service != 'frontend' }}
 
       - name: Setup Go
         uses: ./.github/actions/setup-go
         with:
           go-version: ${{ env.GO_VERSION }}
+        if: ${{ matrix.service != 'frontend' }}
 
       - name: Build service
         uses: ./.github/actions/build-service
         with:
           service-name: ${{ matrix.service }}
+        if: ${{ matrix.service != 'frontend' }}
 
       # Skipping tests for now to speed up deployment, once deployment is validated we can re-enable tests
       # - name: Run tests
@@ -84,36 +87,41 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.validate.outputs.services) }}
       fail-fast: false
-    if: ${{ matrix.service == 'frontend' }}
+    if: ${{ contains(fromJson(needs.validate.outputs.services), 'frontend') }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        if: ${{ matrix.service == 'frontend' }}
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
           node-version: 10.18.1
+        if: ${{ matrix.service == 'frontend' }}
       - name: Setup Node JS
         uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: "pnpm"
+        if: ${{ matrix.service == 'frontend' }}
       - name: Build frontend
         uses: ./.github/actions/build-frontend
         with:
           service-name: ${{ matrix.service }}
+        if: ${{ matrix.service == 'frontend' }}
 
   # ============================================
   # JOB 3: DOCKER BUILD
   # ============================================
   docker-build:
     name: Build Docker Images
-    needs: [validate, build-and-test]
+    needs: [validate, build-backend-service, build-frontend]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         service: ${{ fromJson(needs.validate.outputs.services) }}
       fail-fast: false
+    if: always() && (needs.build-backend-service.result == 'success' || needs.build-frontend.result == 'success' || needs.build-backend-service.result == 'skipped' || needs.build-frontend.result == 'skipped')
 
     steps:
       - name: Checkout code
