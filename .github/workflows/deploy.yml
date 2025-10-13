@@ -42,7 +42,7 @@ jobs:
   # ============================================
   # JOB 2: BUILD SERVICES
   # ============================================
-  build-backend-service:
+  build-services:
     name: Build backend services
     needs: validate
     runs-on: ubuntu-latest
@@ -55,7 +55,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        if: ${{ matrix.service != 'frontend' }}
 
       - name: Setup Go
         uses: ./.github/actions/setup-go
@@ -69,30 +68,6 @@ jobs:
           service-name: ${{ matrix.service }}
         if: ${{ matrix.service != 'frontend' }}
 
-      # Skipping tests for now to speed up deployment, once deployment is validated we can re-enable tests
-      # - name: Run tests
-      #   uses: ./.github/actions/run-tests
-      #   with:
-      #     service-name: ${{ matrix.service }}
-      #     coverage-threshold: 50
-
-  # ============================================
-  # JOB 2: BUILD Frontend
-  # ============================================
-  build-frontend:
-    name: Build Frontend
-    needs: validate
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: ${{ fromJson(needs.validate.outputs.services) }}
-      fail-fast: false
-    if: ${{ contains(fromJson(needs.validate.outputs.services), 'frontend') }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        if: ${{ matrix.service == 'frontend' }}
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
@@ -110,6 +85,13 @@ jobs:
         with:
           service-name: ${{ matrix.service }}
         if: ${{ matrix.service == 'frontend' }}
+
+      # Skipping tests for now to speed up deployment, once deployment is validated we can re-enable tests
+      # - name: Run tests
+      #   uses: ./.github/actions/run-tests
+      #   with:
+      #     service-name: ${{ matrix.service }}
+      #     coverage-threshold: 50
 
   # ============================================
   # JOB 3: DOCKER BUILD
