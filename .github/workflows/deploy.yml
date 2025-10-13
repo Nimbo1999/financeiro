@@ -98,13 +98,12 @@ jobs:
   # ============================================
   docker-build:
     name: Build Docker Images
-    needs: [validate, build-backend-service, build-frontend]
+    needs: [validate, build-services]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         service: ${{ fromJson(needs.validate.outputs.services) }}
       fail-fast: false
-    if: always() && (needs.build-backend-service.result == 'success' || needs.build-frontend.result == 'success' || needs.build-backend-service.result == 'skipped' || needs.build-frontend.result == 'skipped')
 
     steps:
       - name: Checkout code
