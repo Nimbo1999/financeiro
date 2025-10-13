@@ -16,16 +16,13 @@ export function LayoutError() {
   const returnPath = createPath(location);
 
   useEffect(() => {
-    if (error instanceof Error && error.message.includes("401")) {
-      const timer = setTimeout(() => {
-        navigate({
-          pathname: "/refresh",
-          search: new URLSearchParams({ returnPath }).toString(),
-        });
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
+    const timer = setTimeout(() => {
+      navigate({
+        pathname: "/refresh",
+        search: new URLSearchParams({ returnPath }).toString(),
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [error, navigate, returnPath]);
 
   return (

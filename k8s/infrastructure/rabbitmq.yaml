@@ -44,27 +44,41 @@ spec:
               mountPath: /var/lib/rabbitmq
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "250m"
+              memory: "250Mi"
+              cpu: "150m"
             limits:
               memory: "512Mi"
-              cpu: "500m"
+              cpu: "200m"
+          startupProbe:
+            exec:
+              command:
+                - rabbitmqctl
+                - ping
+            initialDelaySeconds: 10      # Aguardar 10s antes de começar a verificar
+            periodSeconds: 10             # Verificar a cada 10s
+            timeoutSeconds: 5             # Timeout de 5s por verificação
+            failureThreshold: 30          # 30 tentativas = 300s (5 minutos) para iniciar
+            successThreshold: 1           # Apenas 1 sucesso necessário
+          # LIVENESS PROBE - Verifica se está "vivo" (só roda depois do startup)
           livenessProbe:
             exec:
               command:
                 - rabbitmqctl
                 - status
-            initialDelaySeconds: 60
-            periodSeconds: 30
-            timeoutSeconds: 5
+            initialDelaySeconds: 0        # Não precisa delay, startup probe já garantiu
+            periodSeconds: 30             # Verificar a cada 30s
+            timeoutSeconds: 10            # Timeout de 10s
+            failureThreshold: 3           # 3 falhas = restart
+          # READINESS PROBE - Verifica se está pronto para receber tráfego
           readinessProbe:
             exec:
               command:
                 - rabbitmqctl
-                - status
-            initialDelaySeconds: 20
-            periodSeconds: 10
-            timeoutSeconds: 5
+                - check_port_connectivity
+            initialDelaySeconds: 0        # Não precisa delay, startup probe já garantiu
+            periodSeconds: 10             # Verificar a cada 10s
+            timeoutSeconds: 5             # Timeout de 5s
+            failureThreshold: 3           # 3 falhas = marca como not ready
       volumes:
         - name: rabbitmq-storage
           persistentVolumeClaim:
