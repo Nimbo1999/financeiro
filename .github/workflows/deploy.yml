@@ -50,7 +50,6 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.validate.outputs.services) }}
       fail-fast: false
-    if: ${{ !contains(fromJson(needs.validate.outputs.services), 'frontend') || (contains(fromJson(needs.validate.outputs.services), 'frontend') && fromJson(needs.validate.outputs.services)[0] != 'frontend') }}
 
     steps:
       - name: Checkout code
