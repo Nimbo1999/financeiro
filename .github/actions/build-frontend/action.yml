@@ -32,4 +32,4 @@ runs:
         FRONTEND_BUILD_PATH="${{ inputs.service-name }}/build"
         echo "frontend-build-path=$FRONTEND_BUILD_PATH" >> $GITHUB_OUTPUT
         echo "✅ Build completed: $FRONTEND_BUILD_PATH"
-        ls -lh $FRONTEND_BUILD_PATH
+        ls -lh build
