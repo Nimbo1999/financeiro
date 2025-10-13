@@ -64,15 +64,14 @@ runs:
             ${{ inputs.service-name }}=$IMAGE \
             -n ${{ inputs.namespace }}
 
-          # Delete old pods to force new pods creation
-          echo "🧹 Deleting old pods to force new pods creation..."
-          kubectl delete pods -n ${{ inputs.namespace }} -l app=${{ inputs.service-name }}
+          # If image update fails, you should check the node resources. This was a common issue
+          # on previous deployments where nodes ran out of memory.
 
           # Wait for rollout with extended timeout
           echo "⏳ Waiting for rollout to complete..."
           kubectl rollout status deployment/${{ inputs.service-name }} \
             -n ${{ inputs.namespace }} \
-            --timeout=1m
+            --timeout=2m
 
           # Final pod status check
           echo "✅ Final pod status:"
