@@ -39,18 +39,15 @@ export function LayoutError() {
         p: 3,
       }}
     >
-      {error instanceof Error && error.message.includes("401") ? (
-        <CircularProgress size="6rem" thickness={4.5} />
-      ) : (
-        <>
-          <Typography variant="h3" color="text.secondary">
-            Something went wrong
-          </Typography>
-          <Typography variant="body1" color="text.primary">
-            Please try again later.
-          </Typography>
-        </>
-      )}
+      <Typography variant="h3" color="text.secondary">
+        Verifying your session...
+      </Typography>
+
+      <Typography variant="body1" color="text.primary">
+        Please wait until we redirect you.
+      </Typography>
+
+      <CircularProgress size="6rem" thickness={4.5} />
     </Box>
   );
 }
