@@ -21,5 +21,8 @@ psql-auth:
 psql-user:
 	docker exec -it user_postgres_db psql -U matheus -d financeiro_user
 
+psql-transaction:
+	docker exec -it transaction_postgres_db psql -U matheus -d financeiro_transaction
+
 psql-notification:
 	docker exec -it notification_postgres_db psql -U matheus -d financeiro_notification

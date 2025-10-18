@@ -10,9 +10,8 @@ import (
 
 	_ "github.com/jackc/pgx/v5"
 	"github.com/nimbo1999/financeiro/migrator"
-	"github.com/nimbo1999/financeiro/users/internal/app"
-	"github.com/nimbo1999/financeiro/users/internal/config"
-	"github.com/nimbo1999/financeiro/users/internal/messaging"
+	"github.com/nimbo1999/financeiro/transactions/internal/app"
+	"github.com/nimbo1999/financeiro/transactions/internal/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -43,13 +42,9 @@ func init() {
 }
 
 func main() {
-	publisher, err := messaging.NewPublisher(cfg.RabbitMQURL, "notification.exchange")
-	if err != nil {
-		log.Printf("Warning: Failed to initialize RabbitMQ publisher: %v", err)
-		log.Println("User service will run without event publishing")
-	}
+	log.Println("Test")
 
-	application := app.New(db, publisher)
+	application := app.New(db)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
@@ -61,11 +56,6 @@ func main() {
 		serverErrors <- application.RunHTTP(cfg.HttpPort)
 	}()
 
-	// Start gRPC server
-	go func() {
-		serverErrors <- application.RunGRPC(cfg.GrpcPort)
-	}()
-
 	select {
 	case err := <-serverErrors:
 		fmt.Printf("Server error: %v\n", err)
@@ -75,7 +65,7 @@ func main() {
 		fmt.Printf("\nReceived signal %v, initiating graceful shutdown...\n", sig)
 
 		ctx := context.Background()
-		if err := application.Shutdown(ctx); err != nil {
+		if err := application.ShutdownHTTP(ctx); err != nil {
 			fmt.Printf("Graceful shutdown error: %v\n", err)
 			os.Exit(1)
 		}

@@ -11,11 +11,13 @@ This is a microservices-based finance tracking application built with Go. The sy
 ### Services
 
 1. **Users Service** (port 8081 HTTP, 9091 gRPC)
+
    - Manages user data and profiles
    - Exposes both HTTP REST and gRPC APIs
    - PostgreSQL database on port 15432
 
 2. **Authentication Service** (port 8082 HTTP, 9092 gRPC)
+
    - Handles authentication and authorization
    - Issues JWT tokens using RSA256 signing
    - Uses RabbitMQ for publishing authentication events
@@ -39,29 +41,130 @@ This is a microservices-based finance tracking application built with Go. The sy
 ### Module Dependencies
 
 Services use Go module `replace` directives for local development:
+
 - `authentication` depends on `users` (imports gRPC client from users/pkg/grpc)
 - `gateway` depends on `authentication` (imports gRPC client from authentication/pkg/grpc)
+
+## Commons Package
+
+The **commons** package (`github.com/nimbo1999/financeiro/commons`) provides shared utilities and types used across all services.
+
+### Pagination
+
+The commons package includes a robust pagination system for handling paginated queries and responses:
+
+**Types:**
+
+- `Pagination` interface: Defines pagination parameters (page, page size, ordering, search query)
+- `PaginatedResult[T]` generic type: Wraps paginated data with metadata
+- `Order` type: Ordering constants (`OrderAsc`, `OrderDesc`)
+
+**Key Methods:**
+
+- `GetPage()`: Returns current page (defaults to 1 if <= 0)
+- `GetPageSize()`: Returns page size (defaults to 10 if <= 0)
+- `GetOrderBy()`: Returns order field (defaults to "updated_at")
+- `GetSort()`: Returns sort direction (defaults to "desc")
+- `GetQuery()`: Returns search query string
+- `Offset()`: Calculates database offset `(page - 1) * pageSize`
+- `Limit()`: Returns page size for database limit
+- `Order()`: Formats order clause as `"field direction"`
+- `GetTotalPages(totalItems)`: Calculates total pages from item count
+
+**Constructor:**
+
+```go
+NewPagination(page, pageSize int, orderBy string, sort Order, query string) Pagination
+```
+
+**Usage Example (from transactions repository):**
+
+```go
+import (
+    "github.com/nimbo1999/financeiro/commons"
+    "github.com/nimbo1999/financeiro/transactions/internal/models"
+)
+
+func (r *repository) List(ctx context.Context, pagination commons.Pagination) (*commons.PaginatedResult[models.Transaction], error) {
+    var entities []models.Transaction
+    var total int64
+
+    // Build base query
+    query := r.db.Model(&models.Transaction{})
+
+    // Apply search filter if query is provided
+    if pagination.GetQuery() != "" {
+        query = query.Where("description ILIKE ?", fmt.Sprintf("%%%s%%", pagination.GetQuery()))
+    }
+
+    // Get total count
+    if err := query.Count(&total).Error; err != nil {
+        return nil, err
+    }
+
+    // Return empty result if no items
+    if total == 0 {
+        return commons.NewPaginatedResult([]models.Transaction{}, total, pagination), nil
+    }
+
+    // Apply pagination and ordering
+    err := query.Order(pagination.Order()).        // "created_at desc"
+        Offset(pagination.Offset()).               // (page - 1) * pageSize
+        Limit(pagination.Limit()).                 // pageSize
+        Find(&entities).Error
+    if err != nil {
+        return nil, err
+    }
+
+    // Return paginated result with metadata
+    return commons.NewPaginatedResult(entities, total, pagination), nil
+}
+```
+
+**PaginatedResult Structure:**
+
+```go
+type PaginatedResult[Entity any] struct {
+    Data       []Entity  // The actual data items
+    Total      int64     // Total number of items (before pagination)
+    Page       int       // Current page number
+    PageSize   int       // Items per page
+    TotalPages int       // Total number of pages
+}
+```
+
+The pagination system automatically handles:
+
+- Default values for invalid inputs (zero/negative page or page size)
+- Search query filtering
+- Total page calculation
+- Database offset/limit calculations
+- Flexible ordering with customizable fields and directions
 
 ## Development Commands
 
 ### Infrastructure
 
 Start all dependencies (PostgreSQL, RabbitMQ, pgAdmin):
+
 ```bash
 make compose-up
 ```
 
 Stop and clean up containers:
+
 ```bash
 make compose-down
 ```
 
 View logs:
+
 ```bash
 make compose-logs
 ```
 
 Access PostgreSQL databases:
+
 ```bash
 make psql-auth    # Authentication DB
 make psql-user    # Users DB
@@ -128,12 +231,14 @@ make unit-test
 ### Testing
 
 Run tests for a specific service:
+
 ```bash
 cd <service>
 make unit-test  # Generates coverage.out, coverage.html, and prints total coverage
 ```
 
 Run a single test file:
+
 ```bash
 go test -v ./path/to/package -run TestName
 ```
@@ -141,12 +246,14 @@ go test -v ./path/to/package -run TestName
 ## Database Migrations
 
 Create a new migration:
+
 ```bash
 # Use sequential numbering instead of timestamps
 migrate create -seq -dir migrations -ext sql [MIGRATION_NAME]
 ```
 
 Run migrations:
+
 ```bash
 cd <service>
 make migrate-up
@@ -181,6 +288,7 @@ Services expose gRPC clients in their `pkg/grpc/<service>/v1/` directories. Othe
 - Authentication service exposes `pkg/grpc/auth/v1/`
 
 To regenerate proto files after modifying `.proto` definitions:
+
 ```bash
 cd users
 ./scripts/generate_proto.sh
@@ -193,13 +301,16 @@ make generate-proto
 Each service reads configuration from environment variables. Key variables:
 
 **Users:**
+
 - `HTTP_PORT`, `GRPC_PORT`, `POSTGRES_CONNECTION_STRING`
 
 **Authentication:**
+
 - `HTTP_PORT`, `GRPC_PORT`, `POSTGRES_CONNECTION_STRING`
 - `RABBITMQ_URL`, `USER_GRPC_ADDRESS`
 
 **Gateway:**
+
 - `GATEWAY_PORT`, `USER_SERVICE_URL`, `AUTH_SERVICE_URL`, `AUTH_SERVICE_GRPC_URL`
 - `GATEWAY_ENABLE_CORS`, `GATEWAY_ENABLE_CIRCUIT_BREAKER`
 
@@ -236,6 +347,7 @@ This project follows **SOLID principles** and clean architecture patterns. For d
 ### Key Principles
 
 **Layered Architecture**: Each service separates concerns into distinct layers:
+
 - **Handler Layer**: HTTP/gRPC request/response handling
 - **Service Layer**: Business logic and orchestration
 - **Repository Layer**: Data persistence
@@ -339,6 +451,7 @@ func (suite *YourTestSuite) TestMethod() {
 ### Test Coverage Requirements
 
 Ensure tests cover:
+
 - ✅ Success scenarios
 - ✅ Validation errors (nil inputs, empty strings, invalid formats)
 - ✅ Not found scenarios

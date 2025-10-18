@@ -64,6 +64,27 @@ services:
       retries: 5
       start_interval: 5s
 
+  transaction-postgres:
+    image: postgres:15-alpine3.22
+    container_name: transaction_postgres_db
+    environment:
+      POSTGRES_USER: matheus
+      POSTGRES_PASSWORD: dev1234 # Using a fake password for development, but in production use a strong password!
+      POSTGRES_DB: financeiro_transaction
+    ports:
+      - "45432:5432"
+    volumes:
+      - transaction_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - transaction_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matheus -d financeiro_transaction"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_interval: 5s
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: rabbitmq_server
@@ -216,6 +237,7 @@ volumes:
   authentication_postgres_data:
   rabbitmq_data:
   notification_postgres_data:
+  transaction_postgres_data:
 
 networks:
   application_network:
@@ -225,4 +247,6 @@ networks:
   auth_network:
     driver: bridge
   notification_network:
+    driver: bridge
+  transaction_network:
     driver: bridge
