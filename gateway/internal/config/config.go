@@ -37,6 +37,7 @@ type ServiceConfig struct {
 	AuthServiceGRPCURL     string
 	UserServiceURL         string
 	NotificationServiceURL string
+	TransactionsServiceURL string
 	// Add more services as needed
 }
 
@@ -65,6 +66,7 @@ func Load() (*Config, error) {
 	authServiceGRPCURL := getEnv("AUTH_SERVICE_GRPC_URL", "localhost:9090")
 	userServiceURL := getEnv("USER_SERVICE_URL", "http://localhost:8080")
 	notificationServiceURL := getEnv("NOTIFICATION_SERVICE_URL", "http://localhost:8080")
+	transactionsServiceURL := getEnv("TRANSACTIONS_SERVICE_URL", "http://localhost:8080")
 
 	// Security configuration
 	enableCORS, err := getEnvAsBool("GATEWAY_ENABLE_CORS", true)
@@ -102,6 +104,7 @@ func Load() (*Config, error) {
 			AuthServiceGRPCURL:     authServiceGRPCURL,
 			UserServiceURL:         userServiceURL,
 			NotificationServiceURL: notificationServiceURL,
+			TransactionsServiceURL: transactionsServiceURL,
 		},
 		Security: SecurityConfig{
 			EnableCORS:     enableCORS,

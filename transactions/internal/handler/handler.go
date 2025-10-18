@@ -99,12 +99,17 @@ func (h *healthHandler) RegisterRoutes(router chi.Router) {
 	router.Get("/", h.HealthCheck)
 }
 
+type HealthResponse struct {
+	Status  string `json:"status"`
+	Service string `json:"service"`
+}
+
 func (h *healthHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	if err := h.db.Raw("SELECT 1").Scan(new(int)).Error; err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "unhealthy"})
+		_ = json.NewEncoder(w).Encode(HealthResponse{Status: "unhealthy", Service: "transactions"})
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+	_ = json.NewEncoder(w).Encode(HealthResponse{Status: "healthy", Service: "transactions"})
 }

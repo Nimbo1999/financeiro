@@ -120,6 +120,12 @@ func (r *Router) setupRoutes() {
 		router.Use(middleware.PathRewrite("/notification", ""))
 		router.HandleFunc("/*", r.proxyToNotificationService)
 	})
+
+	// Transactions service routes (protected - requires authentication)
+	r.mux.Route("/transactions", func(router chi.Router) {
+		router.Use(middleware.PathRewrite("/transactions", ""))
+		router.HandleFunc("/*", r.proxyToTransactionsService)
+	})
 }
 
 func (r *Router) healthCheckHandler(w http.ResponseWriter, req *http.Request) {
@@ -141,6 +147,12 @@ func (r *Router) proxyToUserService(w http.ResponseWriter, req *http.Request) {
 
 func (r *Router) proxyToNotificationService(w http.ResponseWriter, req *http.Request) {
 	if err := r.proxy.ProxyRequestWithLogging(w, req, r.config.Services.NotificationServiceURL, "notifications"); err != nil {
+		http.Error(w, "Service unavailable", http.StatusServiceUnavailable)
+	}
+}
+
+func (r *Router) proxyToTransactionsService(w http.ResponseWriter, req *http.Request) {
+	if err := r.proxy.ProxyRequestWithLogging(w, req, r.config.Services.TransactionsServiceURL, "transactions"); err != nil {
 		http.Error(w, "Service unavailable", http.StatusServiceUnavailable)
 	}
 }
