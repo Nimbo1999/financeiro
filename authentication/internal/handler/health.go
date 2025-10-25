@@ -7,16 +7,19 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/nimbo1999/financeiro/authentication/internal/messaging"
 	"gorm.io/gorm"
 )
 
 type HealthHandler struct {
-	db *gorm.DB
+	db             *gorm.DB
+	amqpConnection messaging.RabbitMQConnection
 }
 
-func NewHealthHandler(db *gorm.DB) *HealthHandler {
+func NewHealthHandler(db *gorm.DB, amqpConnection messaging.RabbitMQConnection) *HealthHandler {
 	return &HealthHandler{
-		db: db,
+		db:             db,
+		amqpConnection: amqpConnection,
 	}
 }
 
@@ -27,6 +30,13 @@ func (h *HealthHandler) HealthHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintln("Database connection error")))
 		return
 	}
+
+	if !h.amqpConnection.IsConnected() {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte(fmt.Sprintln("AMQP connection error")))
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }

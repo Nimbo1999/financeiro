@@ -70,7 +70,7 @@ func (a *App) RunHTTP(config *config.Config, jwtService services.JWTService) err
 	}
 
 	authCodeService := services.NewAuthService(authCodeRepository, jwtService, userServiceClient, publisher, nil)
-	healthHandler := handler.NewHealthHandler(a.db)
+	healthHandler := handler.NewHealthHandler(a.db, rabbitMqConnection)
 	authHandler := handler.NewAuthHandler(authCodeService)
 
 	mux := chi.NewMux()
