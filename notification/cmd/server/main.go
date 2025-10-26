@@ -8,11 +8,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/nimbo1999/financeiro/notification/internal/app"
 	"github.com/nimbo1999/financeiro/notification/internal/config"
-	"github.com/nimbo1999/financeiro/notification/internal/consumers"
+	"github.com/nimbo1999/financeiro/notification/internal/messaging"
 	"github.com/nimbo1999/financeiro/notification/internal/repository"
 	"github.com/nimbo1999/financeiro/notification/internal/services"
 
@@ -63,12 +62,17 @@ func main() {
 	)
 	notificationSvc := services.NewNotificationService(emailSvc, notificationRepo)
 
-	// 5. Initialize RabbitMQ consumer
-	consumer, err := consumers.NewRabbitMQConsumer(
+	// 5. Setup RabbitMQ topology (exchanges, queues, bindings)
+	topologyManager := messaging.NewTopologyManager(cfg.RabbitMQURL, nil)
+	if err := topologyManager.SetupTopology(); err != nil {
+		log.Fatalf("Failed to setup RabbitMQ topology: %v", err)
+	}
+
+	// 6. Initialize RabbitMQ consumer with self-healing capabilities
+	consumer, err := messaging.NewConsumerAdapter(
 		cfg.RabbitMQURL,
 		cfg.WelcomeQueueName,
 		cfg.OTPQueueName,
-		cfg.ConsumerPrefetchCount,
 		notificationSvc,
 	)
 	if err != nil {
@@ -103,23 +107,4 @@ func main() {
 	<-quit
 
 	application.ShutdownApp(ctx)
-}
-
-func connectDB(connString string) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(connString), &gorm.Config{})
-	if err != nil {
-		return nil, err
-	}
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, err
-	}
-
-	sqlDB.SetMaxOpenConns(25)
-	sqlDB.SetMaxIdleConns(5)
-	sqlDB.SetConnMaxLifetime(5 * time.Minute)
-
-	log.Println("Database connection established")
-	return db, nil
 }

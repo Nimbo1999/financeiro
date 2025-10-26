@@ -25,7 +25,14 @@ type App struct {
 
 func NewApp(db *gorm.DB, consumer consumers.Consumer, cfg *config.Config) *App {
 	// Initialize HTTP server (health checks)
-	healthHandler := handler.NewHealthHandler()
+	// Cast consumer to HealthChecker interface
+	healthChecker, ok := consumer.(handler.HealthChecker)
+	if !ok {
+		log.Println("Warning: consumer does not implement HealthChecker interface")
+		healthChecker = nil
+	}
+
+	healthHandler := handler.NewHealthHandler(db, healthChecker)
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Get("/health", healthHandler.Health)

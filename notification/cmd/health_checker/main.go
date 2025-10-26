@@ -14,7 +14,7 @@ import (
 func main() {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	request, err := http.NewRequestWithContext(timeoutCtx, "GET", "http://localhost:80/health", nil)
+	request, err := http.NewRequestWithContext(timeoutCtx, "GET", "http://localhost/health", nil)
 	if err != nil {
 		log.Fatalln(err)
 	}

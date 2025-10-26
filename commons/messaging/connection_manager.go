@@ -74,7 +74,11 @@ func (cm *ConnectionManager) Connect() error {
 func (cm *ConnectionManager) connect() error {
 	cm.logger.Info("connecting to RabbitMQ", "url", maskPassword(cm.config.URL))
 
-	conn, err := amqp.Dial(cm.config.URL)
+	conn, err := amqp.DialConfig(cm.config.URL, amqp.Config{
+		Properties: amqp.Table{
+			"connection_name": cm.config.ConnectionName,
+		},
+	})
 	if err != nil {
 		return fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}

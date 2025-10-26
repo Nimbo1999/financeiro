@@ -35,6 +35,7 @@ func NewEventPublisher(config EventPublisherConfig) (Publisher, error) {
 	// Create commons messaging config with self-healing capabilities
 	messagingConfig := commonsmsg.DefaultConfig(config.RabbitMQURL)
 	messagingConfig.PublisherConfirms = true // Enable publisher confirms for reliability
+	messagingConfig.ConnectionName = "authentication-publisher"
 
 	// Create the underlying commons publisher
 	publisher, err := commonsmsg.NewPublisher(messagingConfig, config.Logger)

@@ -29,6 +29,10 @@ type Config struct {
 	// PrefetchCount sets the number of messages to prefetch for consumers
 	// Default: 1
 	PrefetchCount int
+
+	// Specify the connection name to be used for RabbitMQ connections
+	// Default: "unknown-service"
+	ConnectionName string
 }
 
 // DefaultConfig returns a Config with sensible defaults
@@ -40,6 +44,7 @@ func DefaultConfig(url string) *Config {
 		MaxReconnectDelay:   30 * time.Second,
 		PublisherConfirms:   false,
 		PrefetchCount:       1,
+		ConnectionName:      "unknown-service",
 	}
 }
 
