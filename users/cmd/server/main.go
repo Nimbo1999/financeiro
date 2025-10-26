@@ -43,7 +43,12 @@ func init() {
 }
 
 func main() {
-	publisher, err := messaging.NewPublisher(cfg.RabbitMQURL, "notification.exchange")
+	// Initialize event publisher with self-healing capabilities
+	publisher, err := messaging.NewEventPublisher(messaging.EventPublisherConfig{
+		RabbitMQURL:  cfg.RabbitMQURL,
+		ExchangeName: "notification.exchange",
+		Logger:       nil, // Will use default logger
+	})
 	if err != nil {
 		log.Printf("Warning: Failed to initialize RabbitMQ publisher: %v", err)
 		log.Println("User service will run without event publishing")

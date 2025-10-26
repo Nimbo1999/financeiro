@@ -12,7 +12,7 @@ import (
 func main() {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	request, err := http.NewRequestWithContext(timeoutCtx, "GET", "http://localhost:80/health", nil)
+	request, err := http.NewRequestWithContext(timeoutCtx, "GET", "http://localhost/health", nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -25,7 +25,7 @@ func main() {
 	if err := json.NewDecoder(response.Body).Decode(&healthResponse); err != nil {
 		log.Fatalln(err)
 	}
-	if healthResponse["status"] != "ok" {
+	if healthResponse["status"] != "healthy" {
 		log.Fatalf("Service is not healthy: %s\n", healthResponse["status"])
 	}
 	log.Println("Service users is healthy")
