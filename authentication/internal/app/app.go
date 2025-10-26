@@ -22,15 +22,17 @@ import (
 
 type App struct {
 	db         *gorm.DB
+	publisher  messaging.Publisher
 	server     *http.Server
 	grpcServer *grpc.Server
 	wg         *sync.WaitGroup
 }
 
-func New(db *gorm.DB) *App {
+func New(db *gorm.DB, publisher messaging.Publisher) *App {
 	return &App{
-		db: db,
-		wg: &sync.WaitGroup{},
+		db:        db,
+		publisher: publisher,
+		wg:        &sync.WaitGroup{},
 	}
 }
 
@@ -56,18 +58,8 @@ func (a *App) RunHTTP(config *config.Config, jwtService services.JWTService) err
 		return fmt.Errorf("failed to create user service client: %w", err)
 	}
 
-	// Create event publisher with self-healing capabilities
-	publisher, err := messaging.NewEventPublisher(messaging.EventPublisherConfig{
-		RabbitMQURL:  config.RabbitMQURL,
-		ExchangeName: "notification.exchange",
-		Logger:       nil, // Will use default logger
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create event publisher: %w", err)
-	}
-
-	authCodeService := services.NewAuthService(authCodeRepository, jwtService, userServiceClient, publisher, nil)
-	healthHandler := handler.NewHealthHandler(a.db, publisher)
+	authCodeService := services.NewAuthService(authCodeRepository, jwtService, userServiceClient, a.publisher, nil)
+	healthHandler := handler.NewHealthHandler(a.db, a.publisher)
 	authHandler := handler.NewAuthHandler(authCodeService)
 
 	mux := chi.NewMux()
@@ -167,6 +159,14 @@ func (a *App) Shutdown(ctx context.Context) error {
 			}
 		}
 		fmt.Println("Database connections closed")
+	}
+
+	// Close publisher connection
+	if a.publisher != nil {
+		if err := a.publisher.Close(); err != nil {
+			return fmt.Errorf("publisher close error: %w", err)
+		}
+		fmt.Println("Publisher connection closed")
 	}
 
 	// Return the first error encountered

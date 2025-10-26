@@ -11,6 +11,7 @@ import (
 	_ "github.com/jackc/pgx/v5"
 	"github.com/nimbo1999/financeiro/authentication/internal/app"
 	"github.com/nimbo1999/financeiro/authentication/internal/config"
+	"github.com/nimbo1999/financeiro/authentication/internal/messaging"
 	"github.com/nimbo1999/financeiro/migrator"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -42,7 +43,17 @@ func init() {
 }
 
 func main() {
-	application := app.New(db)
+	// Create event publisher with self-healing capabilities
+	publisher, err := messaging.NewEventPublisher(messaging.EventPublisherConfig{
+		RabbitMQURL:  cfg.RabbitMQURL,
+		ExchangeName: "notification.exchange",
+		Logger:       nil, // Will use default logger
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to create event publisher: %w", err))
+	}
+
+	application := app.New(db, publisher)
 
 	// Initialize JWT service (shared between HTTP and gRPC servers)
 	jwtService, err := application.InitializeJWTService()
