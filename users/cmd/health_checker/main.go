@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/nimbo1999/financeiro/users/internal/handler"
 )
 
 func main() {
@@ -21,12 +23,12 @@ func main() {
 		log.Fatalln(err)
 	}
 	defer response.Body.Close()
-	var healthResponse map[string]string
+	var healthResponse handler.HealthResponse
 	if err := json.NewDecoder(response.Body).Decode(&healthResponse); err != nil {
 		log.Fatalln(err)
 	}
-	if healthResponse["status"] != "healthy" {
-		log.Fatalf("Service is not healthy: %s\n", healthResponse["status"])
+	if healthResponse.Status != "healthy" {
+		log.Fatalf("Service is not healthy: %s\n", healthResponse.Status)
 	}
 	log.Println("Service users is healthy")
 	os.Exit(0)

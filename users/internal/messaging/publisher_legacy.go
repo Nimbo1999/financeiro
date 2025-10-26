@@ -9,10 +9,6 @@ import (
 )
 
 // Publisher interface for publishing events
-type Publisher interface {
-	PublishEvent(ctx context.Context, event *UserCreatedEvent) error
-	Close() error
-}
 
 type publisher struct {
 	conn         *amqp.Connection

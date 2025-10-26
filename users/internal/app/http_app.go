@@ -22,11 +22,11 @@ type App struct {
 	db         *gorm.DB
 	httpServer *http.Server
 	grpcServer *grpc.Server
-	publisher  messaging.Publisher
+	publisher  messaging.PublisherV2
 	wg         *sync.WaitGroup
 }
 
-func New(db *gorm.DB, publisher messaging.Publisher) *App {
+func New(db *gorm.DB, publisher messaging.PublisherV2) *App {
 	return &App{
 		db:        db,
 		publisher: publisher,
@@ -50,12 +50,14 @@ func (a *App) RunHTTP(port string) error {
 	userRepository := repositories.NewUserRepository(a.db)
 	userService := services.NewUserService(userRepository, a.publisher)
 	userHandler := handler.NewUserHandler(userService)
+	healthHandler := handler.NewHealthHandler(a.db, a.publisher)
 
 	mux := chi.NewMux()
 	mux.Use(middleware.Logger)
 	mux.Use(a.requestTrackingMiddleware)
 	mux.Use(cors)
 	mux.Route("/", userHandler.RegisterRoutes)
+	mux.Route("/health", healthHandler.RegisterRoutes)
 
 	a.httpServer = &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),

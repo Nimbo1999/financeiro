@@ -23,7 +23,7 @@ type EventPublisherConfig struct {
 }
 
 // NewEventPublisher creates a new event publisher using commons messaging
-func NewEventPublisher(config EventPublisherConfig) (Publisher, error) {
+func NewEventPublisher(config EventPublisherConfig) (PublisherV2, error) {
 	if config.ExchangeName == "" {
 		config.ExchangeName = "notification.exchange"
 	}

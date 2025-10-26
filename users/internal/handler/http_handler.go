@@ -8,9 +8,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nimbo1999/financeiro/users/internal/handler/dto"
+	"github.com/nimbo1999/financeiro/users/internal/messaging"
 	"github.com/nimbo1999/financeiro/users/internal/models"
 	"github.com/nimbo1999/financeiro/users/internal/services"
 	"github.com/nimbo1999/financeiro/users/internal/utils"
+	"gorm.io/gorm"
 )
 
 type HTTPHandler interface {
@@ -29,7 +31,6 @@ func NewUserHandler(service services.UserService) *UserHandler {
 
 func (h *UserHandler) RegisterRoutes(router chi.Router) {
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
-	router.Get("/health", h.HealthCheck)
 	router.Patch("/{email}/change-admin-state", h.ChangeAdminState)
 	router.Get("/{email}", h.GetUserByIdOrEmail)
 	router.Get("/", h.ListUsers)
@@ -158,10 +159,60 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *UserHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"status":  "healthy",
-		"service": "users",
-	})
+type healthHandler struct {
+	db  *gorm.DB
+	pub messaging.PublisherV2
+}
+
+func NewHealthHandler(db *gorm.DB, pub messaging.PublisherV2) HTTPHandler {
+	return &healthHandler{
+		db:  db,
+		pub: pub,
+	}
+}
+
+func (h *healthHandler) RegisterRoutes(router chi.Router) {
+	router.Get("/", h.HealthCheck)
+}
+
+type HealthResponse struct {
+	Status   string `json:"status"`
+	Database string `json:"database"`
+	RabbitMQ string `json:"rabbitmq"`
+}
+
+func (h *healthHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	response := HealthResponse{
+		Status:   "healthy",
+		Database: h.checkDatabase(),
+		RabbitMQ: h.checkRabbitMQ(),
+	}
+
+	// If any dependency is unhealthy, set overall status to degraded
+	if response.Database != "healthy" || response.RabbitMQ != "healthy" {
+		response.Status = "degraded"
+		w.WriteHeader(http.StatusServiceUnavailable)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *healthHandler) checkDatabase() string {
+	db, err := h.db.DB()
+	if err != nil {
+		return "unhealthy"
+	}
+	if err := db.Ping(); err != nil {
+		return "unhealthy"
+	}
+	return "healthy"
+}
+
+func (h *healthHandler) checkRabbitMQ() string {
+	if h.pub == nil || !h.pub.IsHealthy() {
+		return "unhealthy"
+	}
+	return "healthy"
 }
