@@ -10,6 +10,23 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+// @todo: remove this legacy publisher once the new one is fully integrated
+
 // Publisher interface for publishing events to RabbitMQ
 type Publisher interface {
 	PublishEvent(ctx context.Context, event Event) error

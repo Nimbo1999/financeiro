@@ -2,6 +2,7 @@ FROM golang:1.24-trixie as builder
 
 COPY modules/migrator/ /modules/migrator/
 COPY users/ /users
+COPY commons/ /commons
 
 WORKDIR /app
 

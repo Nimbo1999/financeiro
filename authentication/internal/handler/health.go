@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,33 +11,54 @@ import (
 )
 
 type HealthHandler struct {
-	db             *gorm.DB
-	amqpConnection messaging.RabbitMQConnection
+	db        *gorm.DB
+	publisher messaging.Publisher
 }
 
-func NewHealthHandler(db *gorm.DB, amqpConnection messaging.RabbitMQConnection) *HealthHandler {
+func NewHealthHandler(db *gorm.DB, publisher messaging.Publisher) *HealthHandler {
 	return &HealthHandler{
-		db:             db,
-		amqpConnection: amqpConnection,
+		db:        db,
+		publisher: publisher,
 	}
+}
+
+type HealthResponse struct {
+	Status   string `json:"status"`
+	Database string `json:"database"`
+	RabbitMQ string `json:"rabbitmq"`
 }
 
 func (h *HealthHandler) HealthHandler(w http.ResponseWriter, r *http.Request) {
+	response := HealthResponse{
+		Status:   "healthy",
+		Database: h.checkDatabase(),
+		RabbitMQ: h.checkRabbitMQ(),
+	}
+
+	// If any service is unhealthy, set overall status to degraded
+	if response.Database != "healthy" || response.RabbitMQ != "healthy" {
+		response.Status = "degraded"
+		w.WriteHeader(http.StatusServiceUnavailable)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *HealthHandler) checkDatabase() string {
 	var value int
 	if err := h.db.Raw("SELECT 1").Scan(&value).Error; err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(fmt.Sprintln("Database connection error")))
-		return
+		return "unhealthy"
 	}
+	return "healthy"
+}
 
-	if !h.amqpConnection.IsConnected() {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(fmt.Sprintln("AMQP connection error")))
-		return
+func (h *HealthHandler) checkRabbitMQ() string {
+	if h.publisher == nil || !h.publisher.IsHealthy() {
+		return "unhealthy"
 	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	return "healthy"
 }
 
 func (h *HealthHandler) RegisterRoutes(r chi.Router) chi.Router {

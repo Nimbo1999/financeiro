@@ -56,21 +56,18 @@ func (a *App) RunHTTP(config *config.Config, jwtService services.JWTService) err
 		return fmt.Errorf("failed to create user service client: %w", err)
 	}
 
-	rabbitMqConnection := messaging.NewRabbitMQConnection(messaging.RabbitMQConfig{
-		URL: config.RabbitMQURL,
+	// Create event publisher with self-healing capabilities
+	publisher, err := messaging.NewEventPublisher(messaging.EventPublisherConfig{
+		RabbitMQURL:  config.RabbitMQURL,
+		ExchangeName: "notification.exchange",
+		Logger:       nil, // Will use default logger
 	})
-
-	if err = rabbitMqConnection.Connect(); err != nil {
-		return fmt.Errorf("failed to connect to RabbitMQ: %w", err)
-	}
-
-	publisher, err := messaging.NewPublisher(rabbitMqConnection, messaging.NewQueueManager(rabbitMqConnection), messaging.DefaultPublisherConfig())
 	if err != nil {
-		return fmt.Errorf("failed to create RabbitMQ publisher: %w", err)
+		return fmt.Errorf("failed to create event publisher: %w", err)
 	}
 
 	authCodeService := services.NewAuthService(authCodeRepository, jwtService, userServiceClient, publisher, nil)
-	healthHandler := handler.NewHealthHandler(a.db, rabbitMqConnection)
+	healthHandler := handler.NewHealthHandler(a.db, publisher)
 	authHandler := handler.NewAuthHandler(authCodeService)
 
 	mux := chi.NewMux()

@@ -6,6 +6,22 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+// @todo: remove this legacy queue_manager once the new one is fully integrated
+
 type QueueManager interface {
 	DeclareQueues() error
 	DeclareExchanges() error

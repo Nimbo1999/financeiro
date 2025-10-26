@@ -8,6 +8,22 @@ import (
 	"time"
 )
 
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+// @todo: remove this legacy health monitor once the new one is fully integrated
+
 // HealthStatus represents the health status of the messaging system
 type HealthStatus string
 
@@ -19,12 +35,12 @@ const (
 
 // HealthCheck represents a health check result
 type HealthCheck struct {
-	Component   string       `json:"component"`
-	Status      HealthStatus `json:"status"`
-	Message     string       `json:"message"`
-	Timestamp   time.Time    `json:"timestamp"`
-	Duration    time.Duration `json:"duration_ms"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	Component string                 `json:"component"`
+	Status    HealthStatus           `json:"status"`
+	Message   string                 `json:"message"`
+	Timestamp time.Time              `json:"timestamp"`
+	Duration  time.Duration          `json:"duration_ms"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // HealthMonitor monitors the health of messaging components
@@ -43,14 +59,14 @@ type HealthChecker interface {
 }
 
 type healthMonitor struct {
-	connection      RabbitMQConnection
-	publisher       Publisher
-	checkers        map[string]HealthChecker
-	status          map[string]HealthCheck
-	checkInterval   time.Duration
-	mutex           sync.RWMutex
-	stopCh          chan struct{}
-	isRunning       bool
+	connection    RabbitMQConnection
+	publisher     Publisher
+	checkers      map[string]HealthChecker
+	status        map[string]HealthCheck
+	checkInterval time.Duration
+	mutex         sync.RWMutex
+	stopCh        chan struct{}
+	isRunning     bool
 }
 
 // NewHealthMonitor creates a new health monitor
@@ -172,7 +188,7 @@ func (h *healthMonitor) GetStatus() HealthCheck {
 	overall.Metadata = map[string]interface{}{
 		"total_components":     totalCount,
 		"unhealthy_components": unhealthyCount,
-		"last_check":          time.Now().UTC().Format(time.RFC3339),
+		"last_check":           time.Now().UTC().Format(time.RFC3339),
 	}
 
 	return overall

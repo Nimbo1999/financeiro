@@ -9,6 +9,28 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+// @todo: remove this legacy rabbitmq connection once the new one is fully integrated
+
 type RabbitMQConnection interface {
 	Connect() error
 	Close() error
