@@ -47,8 +47,11 @@ func (h *HealthHandler) HealthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HealthHandler) checkDatabase() string {
-	var value int
-	if err := h.db.Raw("SELECT 1").Scan(&value).Error; err != nil {
+	db, err := h.db.DB()
+	if err != nil {
+		return "unhealthy"
+	}
+	if err := db.Ping(); err != nil {
 		return "unhealthy"
 	}
 	return "healthy"
