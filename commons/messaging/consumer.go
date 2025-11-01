@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -154,35 +155,70 @@ func (c *consumer) consumeMessages(ctx context.Context, queue string, handler Me
 func (c *consumer) handleMessage(delivery amqp.Delivery, handler MessageHandler) {
 	defer func() {
 		if r := recover(); r != nil {
+			retryCount := GetRetryCount(delivery)
 			c.logger.Error("panic in message handler",
 				"panic", r,
-				"delivery_tag", delivery.DeliveryTag)
-			// Nack and requeue on panic
-			delivery.Nack(false, true)
+				"delivery_tag", delivery.DeliveryTag,
+				"retry_count", retryCount)
+
+			// Check if we should retry or move to DLQ
+			if ShouldRetry(delivery) {
+				c.logger.Warn("requeuing message after panic",
+					"delivery_tag", delivery.DeliveryTag,
+					"retry_count", retryCount,
+					"max_retries", MaxRetries)
+				c.requeueWithRetry(delivery)
+			} else {
+				c.logger.Error("max retries exceeded, moving to DLQ",
+					"delivery_tag", delivery.DeliveryTag,
+					"retry_count", retryCount,
+					"max_retries", MaxRetries)
+				delivery.Reject(false) // Send to DLQ (no requeue)
+			}
 		}
 	}()
 
 	c.logger.Debug("processing message",
 		"delivery_tag", delivery.DeliveryTag,
 		"routing_key", delivery.RoutingKey,
-		"body_size", len(delivery.Body))
+		"body_size", len(delivery.Body),
+		"retry_count", GetRetryCount(delivery))
 
 	start := time.Now()
 	err := handler(delivery)
 	duration := time.Since(start)
 
 	if err != nil {
+		retryCount := GetRetryCount(delivery)
 		c.logger.Error("message handler error",
 			"error", err,
 			"delivery_tag", delivery.DeliveryTag,
 			"routing_key", delivery.RoutingKey,
-			"duration_ms", duration.Milliseconds())
+			"duration_ms", duration.Milliseconds(),
+			"retry_count", retryCount)
 
-		// Nack and requeue the message
-		if nackErr := delivery.Nack(false, true); nackErr != nil {
-			c.logger.Error("failed to nack message",
-				"error", nackErr,
-				"delivery_tag", delivery.DeliveryTag)
+		// Determine retry strategy based on retry count
+		if ShouldRetry(delivery) {
+			c.logger.Warn("requeuing message for retry",
+				"delivery_tag", delivery.DeliveryTag,
+				"retry_count", retryCount,
+				"max_retries", MaxRetries)
+
+			// Republish with incremented retry count, then ack
+			c.requeueWithRetry(delivery)
+		} else {
+			c.logger.Error("max retries exceeded, moving to DLQ",
+				"delivery_tag", delivery.DeliveryTag,
+				"retry_count", retryCount,
+				"max_retries", MaxRetries,
+				"error", err)
+
+			// Reject without requeue (sends to DLQ)
+			if rejectErr := delivery.Reject(false); rejectErr != nil {
+				c.logger.Error("failed to reject message",
+					"error", rejectErr,
+					"delivery_tag", delivery.DeliveryTag)
+			}
 		}
 		return
 	}
@@ -199,6 +235,76 @@ func (c *consumer) handleMessage(delivery amqp.Delivery, handler MessageHandler)
 		"delivery_tag", delivery.DeliveryTag,
 		"routing_key", delivery.RoutingKey,
 		"duration_ms", duration.Milliseconds())
+}
+
+// requeueWithRetry republishes the message with an incremented retry count
+func (c *consumer) requeueWithRetry(delivery amqp.Delivery) {
+	// Get current retry count and increment
+	currentRetry := GetRetryCount(delivery)
+	newRetryCount := currentRetry + 1
+
+	// Get channel for republishing
+	channel, err := c.connManager.GetChannel()
+	if err != nil {
+		c.logger.Error("failed to get channel for requeue",
+			"error", err,
+			"delivery_tag", delivery.DeliveryTag)
+		// Fall back to nack
+		delivery.Nack(false, true)
+		return
+	}
+
+	// Copy headers and add/update retry count
+	headers := make(amqp.Table)
+	if delivery.Headers != nil {
+		maps.Copy(headers, delivery.Headers)
+	}
+	headers[RetryCountHeader] = int32(newRetryCount)
+
+	// Republish message with updated retry count
+	err = channel.Publish(
+		delivery.Exchange,   // exchange
+		delivery.RoutingKey, // routing key
+		false,               // mandatory
+		false,               // immediate
+		amqp.Publishing{
+			Headers:         headers,
+			ContentType:     delivery.ContentType,
+			ContentEncoding: delivery.ContentEncoding,
+			DeliveryMode:    delivery.DeliveryMode,
+			Priority:        delivery.Priority,
+			CorrelationId:   delivery.CorrelationId,
+			ReplyTo:         delivery.ReplyTo,
+			Expiration:      delivery.Expiration,
+			MessageId:       delivery.MessageId,
+			Timestamp:       delivery.Timestamp,
+			Type:            delivery.Type,
+			UserId:          delivery.UserId,
+			AppId:           delivery.AppId,
+			Body:            delivery.Body,
+		},
+	)
+
+	if err != nil {
+		c.logger.Error("failed to republish message",
+			"error", err,
+			"delivery_tag", delivery.DeliveryTag,
+			"retry_count", newRetryCount)
+		// Fall back to nack on republish failure
+		delivery.Nack(false, true)
+		return
+	}
+
+	// Ack the original message since we successfully republished
+	if ackErr := delivery.Ack(false); ackErr != nil {
+		c.logger.Error("failed to ack message after republish",
+			"error", ackErr,
+			"delivery_tag", delivery.DeliveryTag)
+	}
+
+	c.logger.Debug("message republished with retry count",
+		"delivery_tag", delivery.DeliveryTag,
+		"retry_count", newRetryCount)
 }
 
 // Close closes the consumer and its underlying connection

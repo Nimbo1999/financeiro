@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	commonsmessaging "github.com/nimbo1999/financeiro/commons/messaging"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -25,31 +26,38 @@ func NewTopologyManager(url string, logger *slog.Logger) *TopologyManager {
 	}
 }
 
-// SetupTopology declares all exchanges, queues, and bindings
+// SetupTopology declares all exchanges, queues, and bindings using commons QueueDeclarer
 func (tm *TopologyManager) SetupTopology() error {
 	tm.logger.Info("setting up RabbitMQ topology")
 
-	// Connect to RabbitMQ
-	conn, err := amqp.Dial(tm.url)
+	// Create connection manager from commons
+	config := commonsmessaging.DefaultConfig(tm.url)
+	connManager, err := commonsmessaging.NewConnectionManager(config, tm.logger)
 	if err != nil {
+		return fmt.Errorf("failed to create connection manager: %w", err)
+	}
+
+	if err := connManager.Connect(); err != nil {
 		return fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}
-	defer conn.Close()
+	defer connManager.Close()
 
-	// Create channel
-	channel, err := conn.Channel()
+	// Get channel for exchange declaration
+	channel, err := connManager.GetChannel()
 	if err != nil {
-		return fmt.Errorf("failed to create channel: %w", err)
+		return fmt.Errorf("failed to get channel: %w", err)
 	}
-	defer channel.Close()
 
-	// Declare exchange
+	// Declare main exchange
 	if err := tm.declareExchange(channel); err != nil {
 		return err
 	}
 
-	// Declare queues
-	if err := tm.declareQueues(channel); err != nil {
+	// Use QueueDeclarer from commons for DLQ setup
+	queueDeclarer := commonsmessaging.NewQueueDeclarer(connManager)
+
+	// Declare queues with DLQ using commons helper
+	if err := tm.declareQueuesWithDLQ(queueDeclarer); err != nil {
 		return err
 	}
 
@@ -80,45 +88,31 @@ func (tm *TopologyManager) declareExchange(channel *amqp.Channel) error {
 	return nil
 }
 
-func (tm *TopologyManager) declareQueues(channel *amqp.Channel) error {
-	queues := []struct {
-		name string
-		args amqp.Table
+func (tm *TopologyManager) declareQueuesWithDLQ(queueDeclarer commonsmessaging.QueueDeclarer) error {
+	// Define queues that need DLQ support
+	queuesWithDLQ := []struct {
+		name          string
+		dlqExchange   string
+		dlqRoutingKey string
 	}{
 		{
-			name: "notification.welcome",
-			args: amqp.Table{
-				"x-dead-letter-exchange":    "notification.exchange",
-				"x-dead-letter-routing-key": "notification.failed",
-			},
+			name:          "notification.welcome",
+			dlqExchange:   "notification.dlq.exchange",
+			dlqRoutingKey: "notification.welcome.failed",
 		},
 		{
-			name: "notification.otp",
-			args: amqp.Table{
-				"x-dead-letter-exchange":    "notification.exchange",
-				"x-dead-letter-routing-key": "notification.failed",
-			},
-		},
-		{
-			name: "notification.dlq",
-			args: nil,
+			name:          "notification.otp",
+			dlqExchange:   "notification.dlq.exchange",
+			dlqRoutingKey: "notification.otp.failed",
 		},
 	}
 
-	for _, q := range queues {
-		_, err := channel.QueueDeclare(
-			q.name, // name
-			true,   // durable
-			false,  // auto-delete
-			false,  // exclusive
-			false,  // no-wait
-			q.args, // arguments
-		)
-		if err != nil {
-			return fmt.Errorf("failed to declare queue %s: %w", q.name, err)
+	// Declare each queue with DLQ using commons helper
+	for _, q := range queuesWithDLQ {
+		if err := queueDeclarer.DeclareQueueWithDLQ(q.name, q.dlqExchange, q.dlqRoutingKey); err != nil {
+			return fmt.Errorf("failed to declare queue %s with DLQ: %w", q.name, err)
 		}
-
-		tm.logger.Debug("queue declared", "name", q.name)
+		tm.logger.Debug("queue with DLQ declared", "name", q.name, "dlq", q.name+".dlq")
 	}
 
 	return nil
@@ -128,28 +122,38 @@ func (tm *TopologyManager) bindQueues(channel *amqp.Channel) error {
 	bindings := []struct {
 		queue      string
 		routingKey string
+		exchange   string
 	}{
 		{
 			queue:      "notification.welcome",
 			routingKey: "user.created",
+			exchange:   "notification.exchange",
 		},
 		{
 			queue:      "notification.otp",
 			routingKey: "auth.code.requested",
+			exchange:   "notification.exchange",
+		},
+		// Bind DLQ queues to their routing keys
+		{
+			queue:      "notification.welcome.dlq",
+			routingKey: "notification.welcome.failed",
+			exchange:   "notification.dlq.exchange",
 		},
 		{
-			queue:      "notification.dlq",
-			routingKey: "notification.failed",
+			queue:      "notification.otp.dlq",
+			routingKey: "notification.otp.failed",
+			exchange:   "notification.dlq.exchange",
 		},
 	}
 
 	for _, b := range bindings {
 		err := channel.QueueBind(
-			b.queue,                 // queue name
-			b.routingKey,            // routing key
-			"notification.exchange", // exchange
-			false,                   // no-wait
-			nil,                     // arguments
+			b.queue,      // queue name
+			b.routingKey, // routing key
+			b.exchange,   // exchange
+			false,        // no-wait
+			nil,          // arguments
 		)
 		if err != nil {
 			return fmt.Errorf("failed to bind queue %s with routing key %s: %w",
@@ -158,7 +162,8 @@ func (tm *TopologyManager) bindQueues(channel *amqp.Channel) error {
 
 		tm.logger.Debug("queue bound",
 			"queue", b.queue,
-			"routing_key", b.routingKey)
+			"routing_key", b.routingKey,
+			"exchange", b.exchange)
 	}
 
 	return nil

@@ -1,18 +1,18 @@
-PHONY: compose-up compose-down compose-down-volumes compose-up-build compose-logs psql-auth psql-user psql-notification pods svc
+PHONY: up down down-volumes up-build logs psql-auth psql-user psql-notification pods svc
 
-compose-up: compose-down
+up: down
 	docker-compose up -d
 
-compose-down:
+down:
 	docker-compose down
 
-compose-down-volumes:
+down-volumes:
 	docker-compose down -v
 
-compose-up-build: compose-down
+up-build: down
 	docker-compose up -d --build
 
-compose-logs:
+logs:
 	docker-compose logs -f --tail=100
 
 psql-auth:

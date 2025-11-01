@@ -96,6 +96,52 @@ func (suite *RetryTestSuite) TestGetRetryCount_CountInvalidType() {
 	assert.Equal(suite.T(), int64(0), count)
 }
 
+func (suite *RetryTestSuite) TestGetRetryCount_CustomHeader0() {
+	delivery := amqp.Delivery{
+		Headers: amqp.Table{
+			RetryCountHeader: int32(0),
+		},
+	}
+	count := GetRetryCount(delivery)
+	assert.Equal(suite.T(), int64(0), count)
+}
+
+func (suite *RetryTestSuite) TestGetRetryCount_CustomHeader3() {
+	delivery := amqp.Delivery{
+		Headers: amqp.Table{
+			RetryCountHeader: int32(3),
+		},
+	}
+	count := GetRetryCount(delivery)
+	assert.Equal(suite.T(), int64(3), count)
+}
+
+func (suite *RetryTestSuite) TestGetRetryCount_CustomHeader5() {
+	delivery := amqp.Delivery{
+		Headers: amqp.Table{
+			RetryCountHeader: int32(5),
+		},
+	}
+	count := GetRetryCount(delivery)
+	assert.Equal(suite.T(), int64(5), count)
+}
+
+func (suite *RetryTestSuite) TestGetRetryCount_CustomHeaderTakesPrecedence() {
+	// When both custom header and x-death exist, custom header should take precedence
+	delivery := amqp.Delivery{
+		Headers: amqp.Table{
+			RetryCountHeader: int32(3),
+			"x-death": []interface{}{
+				amqp.Table{
+					"count": int64(10),
+				},
+			},
+		},
+	}
+	count := GetRetryCount(delivery)
+	assert.Equal(suite.T(), int64(3), count, "Custom header should take precedence over x-death")
+}
+
 func (suite *RetryTestSuite) TestGetRetryCount_Count0() {
 	delivery := amqp.Delivery{
 		Headers: amqp.Table{

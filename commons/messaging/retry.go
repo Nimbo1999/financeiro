@@ -7,16 +7,24 @@ import (
 const (
 	// MaxRetries is the maximum number of retry attempts before sending to DLQ
 	MaxRetries = 5
+
+	// RetryCountHeader is the custom header used to track retry attempts
+	RetryCountHeader = "x-retry-count"
 )
 
 // GetRetryCount extracts the retry count from message headers
-// RabbitMQ tracks retries in the x-death header array
+// We use a custom header since x-death is only populated when messages are dead-lettered
 func GetRetryCount(delivery amqp.Delivery) int64 {
 	if delivery.Headers == nil {
 		return 0
 	}
 
-	// x-death is an array of death records
+	// Try to get custom retry count header first
+	if count, ok := delivery.Headers[RetryCountHeader].(int32); ok {
+		return int64(count)
+	}
+
+	// Fall back to x-death if present (for messages that came from DLQ)
 	xDeath, ok := delivery.Headers["x-death"].([]interface{})
 	if !ok || len(xDeath) == 0 {
 		return 0

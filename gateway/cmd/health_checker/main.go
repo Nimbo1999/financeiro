@@ -13,7 +13,7 @@ import (
 func main() {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	request, err := http.NewRequestWithContext(timeoutCtx, "GET", "http://localhost:8080/health", nil)
+	request, err := http.NewRequestWithContext(timeoutCtx, "GET", "http://localhost/health", nil)
 	if err != nil {
 		log.Fatalln(fmt.Errorf("failed to create health check request: %w", err))
 	}
