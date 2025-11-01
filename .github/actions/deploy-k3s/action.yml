@@ -58,6 +58,21 @@ runs:
           echo "📊 Current deployment status:"
           kubectl get deployment/${{ inputs.service-name }} -n ${{ inputs.namespace }} || echo "Deployment not found"
 
+          # Check if current image matches desired image
+          echo "🔍 Checking current image..."
+          CURRENT_IMAGE=\$(kubectl get deployment/${{ inputs.service-name }} \
+            -n ${{ inputs.namespace }} \
+            -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "")
+
+          if [ "\$CURRENT_IMAGE" = "$IMAGE" ]; then
+            echo "⏭️  Deployment already using image: $IMAGE"
+            echo "✅ Skipping deployment - image is up to date"
+            exit 0
+          fi
+
+          echo "🔄 Current image: \$CURRENT_IMAGE"
+          echo "🎯 Target image: $IMAGE"
+
           # Update image in deployment
           echo "🔄 Updating deployment image..."
           kubectl set image deployment/${{ inputs.service-name }} \
