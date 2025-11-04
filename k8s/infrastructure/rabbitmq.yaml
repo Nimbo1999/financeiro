@@ -1,3 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-plugins
+  namespace: financeiro
+data:
+  enabled_plugins: |
+    [rabbitmq_management,rabbitmq_management_agent,rabbitmq_web_dispatch].
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -42,21 +51,24 @@ spec:
           volumeMounts:
             - name: rabbitmq-storage
               mountPath: /var/lib/rabbitmq
+            - name: rabbitmq-plugins
+              mountPath: /etc/rabbitmq/enabled_plugins
+              subPath: enabled_plugins
           resources:
             requests:
-              memory: "250Mi"
-              cpu: "150m"
+              memory: "256Mi"
+              cpu: "200m"
             limits:
               memory: "512Mi"
-              cpu: "200m"
+              cpu: "500m"
           startupProbe:
             exec:
               command:
                 - rabbitmqctl
                 - ping
-            initialDelaySeconds: 10      # Aguardar 10s antes de começar a verificar
+            initialDelaySeconds: 30      # Aguardar 30s antes de começar a verificar
             periodSeconds: 10             # Verificar a cada 10s
-            timeoutSeconds: 5             # Timeout de 5s por verificação
+            timeoutSeconds: 10            # Timeout de 10s por verificação
             failureThreshold: 30          # 30 tentativas = 300s (5 minutos) para iniciar
             successThreshold: 1           # Apenas 1 sucesso necessário
           # LIVENESS PROBE - Verifica se está "vivo" (só roda depois do startup)
@@ -65,24 +77,27 @@ spec:
               command:
                 - rabbitmqctl
                 - status
-            initialDelaySeconds: 0        # Não precisa delay, startup probe já garantiu
+            initialDelaySeconds: 30
             periodSeconds: 30             # Verificar a cada 30s
-            timeoutSeconds: 10            # Timeout de 10s
+            timeoutSeconds: 15            # Timeout de 15s
             failureThreshold: 3           # 3 falhas = restart
           # READINESS PROBE - Verifica se está pronto para receber tráfego
           readinessProbe:
             exec:
               command:
                 - rabbitmqctl
-                - check_port_connectivity
-            initialDelaySeconds: 0        # Não precisa delay, startup probe já garantiu
+                - status
+            initialDelaySeconds: 30
             periodSeconds: 10             # Verificar a cada 10s
-            timeoutSeconds: 5             # Timeout de 5s
+            timeoutSeconds: 10            # Timeout de 10s
             failureThreshold: 3           # 3 falhas = marca como not ready
       volumes:
         - name: rabbitmq-storage
           persistentVolumeClaim:
             claimName: rabbitmq-pvc
+        - name: rabbitmq-plugins
+          configMap:
+            name: rabbitmq-plugins
 ---
 apiVersion: v1
 kind: Service
